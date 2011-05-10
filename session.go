@@ -1,3 +1,16 @@
+// This simple example demonstrates how to get started using lpad to
+// communicate with Launchpad in a console application:
+//
+//     root, err := lpad.Login(lpad.Production, &lpad.ConsoleOAuth)
+//     if err != nil {
+//         panic(err)
+//     }
+//     me, err := root.Me()
+//     if err != nil {
+//         panic(err)
+//     }
+//     fmt.Println(me.DisplayName())
+//
 package lpad
 
 import (
@@ -52,7 +65,7 @@ func (s *Session) Sign(req *http.Request) (err os.Error) {
 //         panic(err)
 //     }
 //     fmt.Println(me.DisplayName())
-
+//
 func Login(baseurl string, auth Auth) (root Root, err os.Error) {
 	err = auth.Login(baseurl)
 	if err != nil {
