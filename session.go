@@ -1,7 +1,7 @@
 // This simple example demonstrates how to get started using lpad to
 // communicate with Launchpad in a console application:
 //
-//     root, err := lpad.Login(lpad.Production, &lpad.ConsoleOAuth)
+//     root, err := lpad.Login(lpad.Production, &lpad.ConsoleOAuth{})
 //     if err != nil {
 //         panic(err)
 //     }
@@ -56,7 +56,7 @@ func (s *Session) Sign(req *http.Request) (err os.Error) {
 // This simple example demonstrates how to get a user's name in a console
 // application:
 //
-//     root, err := lpad.Login(lpad.Production, &lpad.ConsoleOAuth)
+//     root, err := lpad.Login(lpad.Production, &lpad.ConsoleOAuth{})
 //     if err != nil {
 //         panic(err)
 //     }
