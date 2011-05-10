@@ -1,0 +1,131 @@
+package lpad_test
+
+import (
+	"flag"
+	"fmt"
+	. "launchpad.net/gocheck"
+	"http"
+	"os"
+	"testing"
+	"time"
+)
+
+func Test(t *testing.T) {
+	TestingT(t)
+}
+
+var integration = flag.Bool("i", false, "Enable integration tests")
+
+type SuiteI struct{}
+
+func (s *SuiteI) SetUpSuite(c *C) {
+	if !*integration {
+		c.Skip("Integration tests not enabled (-int flag)")
+	}
+}
+
+type HTTPSuite struct{}
+
+var testServer = NewTestHTTPServer("http://localhost:4444", 5e9)
+
+
+func (s *HTTPSuite) SetUpSuite(c *C) {
+	testServer.Start()
+}
+
+func (s *HTTPSuite) TearDownTest(c *C) {
+	testServer.FlushRequests()
+}
+
+type TestHTTPServer struct {
+	URL      string
+	Timeout  int64
+	started  bool
+	request  chan *http.Request
+	response chan *testResponse
+	pending  chan bool
+}
+
+type testResponse struct {
+	Status  int
+	Headers map[string]string
+	Body    string
+}
+
+func NewTestHTTPServer(url string, timeout int64) *TestHTTPServer {
+	return &TestHTTPServer{URL: url, Timeout: timeout}
+}
+
+func (s *TestHTTPServer) Start() {
+	if s.started {
+		return
+	}
+	s.started = true
+
+	s.request = make(chan *http.Request, 64)
+	s.response = make(chan *testResponse, 64)
+	s.pending = make(chan bool, 64)
+
+	url, _ := http.ParseURL(s.URL)
+	go http.ListenAndServe(url.Host, s)
+
+	s.PrepareResponse(123, nil, "")
+	for {
+		// Wait for it to be up.
+		resp, _, err := http.Get(s.URL)
+		if err == nil && resp.StatusCode == 123 {
+			break
+		}
+		fmt.Fprintf(os.Stderr, "\nWaiting for fake server to be up... ")
+		time.Sleep(1e8)
+	}
+	fmt.Fprintf(os.Stderr, "done\n\n")
+	s.WaitRequest() // Consume dummy request.
+}
+
+// FlushRequests discards requests which were not yet consumed by WaitRequest.
+func (s *TestHTTPServer) FlushRequests() {
+	for {
+		select {
+		case <-s.request:
+		default:
+			return
+		}
+	}
+}
+
+func (s *TestHTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	s.request <- req
+	var resp *testResponse
+	select {
+	case resp = <-s.response:
+	case <-time.After(s.Timeout):
+		fmt.Fprintf(os.Stderr, "ERROR: Timeout waiting for test to provide response\n")
+		resp = &testResponse{500, nil, ""}
+	}
+	if resp.Headers != nil {
+		h := w.Header()
+		for k, v := range resp.Headers {
+			h.Set(k, v)
+		}
+	}
+	if resp.Status != 0 {
+		w.WriteHeader(resp.Status)
+	}
+	w.Write([]byte(resp.Body))
+}
+
+func (s *TestHTTPServer) WaitRequest() *http.Request {
+	select {
+	case req := <-s.request:
+		return req
+	case <-time.After(s.Timeout):
+		panic("Timeout waiting for request")
+	}
+	panic("unreached")
+}
+
+func (s *TestHTTPServer) PrepareResponse(status int, headers map[string]string, body string) {
+	s.response <- &testResponse{status, headers, body}
+}

@@ -1,0 +1,265 @@
+package lpad_test
+
+import (
+	"http"
+	"io/ioutil"
+	"json"
+	. "launchpad.net/gocheck"
+	"launchpad.net/lpad"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+var _ = Suite(&OAuthS{})
+var _ = Suite(&OAuthI{})
+
+type OAuthS struct {
+	HTTPSuite
+}
+
+type OAuthI struct{
+	SuiteI
+}
+
+func (s *OAuthS) TestRequestToken(c *C) {
+	gotAuthURL := ""
+	callback := func(oauth *lpad.OAuth) os.Error {
+		gotAuthURL = oauth.AuthURL
+		return os.NewError("STOP!")
+	}
+	oauth := lpad.OAuth{
+		Callback: callback,
+	}
+
+	testServer.PrepareResponse(200, nil, "oauth_token=mytoken&oauth_token_secret=mysecret")
+
+	err := oauth.Login(testServer.URL)
+	c.Assert(err, Matches, "STOP!")
+	c.Assert(gotAuthURL, Equals, testServer.URL + "/+authorize-token?oauth_token=mytoken")
+	c.Assert(oauth.BaseURL, Equals, testServer.URL)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "POST")
+	c.Assert(req.URL.RawPath, Equals, "/+request-token")
+	c.Assert(req.Form["oauth_consumer_key"], Equals, []string{"https://launchpad.net/lpad"})
+	c.Assert(req.Form["oauth_signature_method"], Equals, []string{"PLAINTEXT"})
+	c.Assert(req.Form["oauth_signature"], Equals, []string{"&"})
+
+	c.Assert(oauth.Token, Equals, "mytoken")
+	c.Assert(oauth.TokenSecret, Equals, "mysecret")
+}
+
+func (s *OAuthS) TestBaseURLStripping(c *C) {
+	// https://api.launchpad.net/1.0/ as a BaseURL must
+	// yield a https://launchpad.net/ BaseURL for auth.
+
+	callback := func(oauth *lpad.OAuth) os.Error {
+		return os.NewError("STOP!")
+	}
+	oauth := lpad.OAuth{
+		Callback: callback,
+	}
+
+	testServer.PrepareResponse(200, nil, "oauth_token=mytoken&oauth_token_secret=mysecret")
+
+	url, err := http.ParseURL(testServer.URL)
+	c.Assert(err, IsNil)
+
+	url.Host = "api." + url.Host
+	url.Path = "/1.0/"
+
+	c.Assert(url.String(), Matches, `http://api\..*/1\.0/`)
+	err = oauth.Login(url.String())
+
+	c.Assert(err, Matches, "STOP!")
+	c.Assert(oauth.BaseURL, Equals, testServer.URL)
+}
+
+func (s *OAuthS) TestRequestTokenWithConsumer(c *C) {
+	callback := func(oauth *lpad.OAuth) os.Error {
+		return os.NewError("STOP!")
+	}
+	oauth := lpad.OAuth{
+		Callback: callback,
+		Consumer: "myconsumer",
+	}
+
+	testServer.PrepareResponse(200, nil, "oauth_token=mytoken&oauth_token_secret=mysecret")
+
+	err := oauth.Login(testServer.URL)
+	c.Assert(err, Matches, "STOP!")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["oauth_consumer_key"], Equals, []string{"myconsumer"})
+}
+
+func (s *OAuthS) TestCallbackURL(c *C) {
+	gotAuthURL := ""
+	callback := func(oauth *lpad.OAuth) os.Error {
+		gotAuthURL = oauth.AuthURL
+		return os.NewError("STOP!")
+	}
+	oauth := lpad.OAuth{
+		CallbackURL: "http://example.com",
+		Callback: callback,
+	}
+
+	testServer.PrepareResponse(200, nil, "oauth_token=mytoken&oauth_token_secret=mysecret")
+
+	err := oauth.Login(testServer.URL)
+	c.Assert(err, Matches, "STOP!")
+	c.Assert(gotAuthURL, Equals, testServer.URL + "/+authorize-token?oauth_token=mytoken&oauth_callback=http%3A%2F%2Fexample.com")
+}
+
+func (s *OAuthS) TestAccessToken(c *C) {
+	testServer.PrepareResponse(200, nil, "oauth_token=mytoken1&oauth_token_secret=mysecret1")
+	testServer.PrepareResponse(200, nil, "oauth_token=mytoken2&oauth_token_secret=mysecret2")
+
+	oauth := lpad.OAuth{}
+	err := oauth.Login(testServer.URL)
+	c.Assert(err, IsNil)
+
+	req1 := testServer.WaitRequest()
+	c.Assert(req1.URL.RawPath, Equals, "/+request-token")
+
+	req2 := testServer.WaitRequest()
+	c.Assert(req2.Method, Equals, "POST")
+	c.Assert(req2.URL.RawPath, Equals, "/+access-token")
+	c.Assert(req2.Form["oauth_token"], Equals, []string{"mytoken1"})
+	c.Assert(req2.Form["oauth_signature"], Equals, []string{"&mysecret1"})
+
+	c.Assert(oauth.Token, Equals, "mytoken2")
+	c.Assert(oauth.TokenSecret, Equals, "mysecret2")
+	c.Assert(oauth.AuthURL, Equals, "")
+}
+
+
+func (s *OAuthS) TestSign(c *C) {
+	oauth := lpad.OAuth{
+		Token: "my token",
+		TokenSecret: "my secret",
+	}
+
+	req, err := http.NewRequest("GET", "http://example.com/path", nil)
+	c.Assert(err, IsNil)
+
+	err = oauth.Sign(req)
+	c.Assert(err, IsNil)
+
+	auth := req.Header.Get("Authorization")
+	parts := strings.Split(auth, ", ", -1)
+	c.Assert(parts[0], Equals, `OAuth realm="https://api.launchpad.net/"`)
+	c.Assert(parts[1], Equals, `oauth_consumer_key="https%3A%2F%2Flaunchpad.net%2Flpad"`)
+	c.Assert(parts[2], Equals, `oauth_token="my+token"`)
+	c.Assert(parts[3], Equals, `oauth_signature_method="PLAINTEXT"`)
+	c.Assert(parts[4], Equals, `oauth_signature="%26my+secret"`)
+	c.Assert(parts[5], Matches, `oauth_timestamp="[0-9]+"`)
+	c.Assert(parts[6], Matches, `oauth_nonce="[0-9]+"`)
+	c.Assert(parts[7], Equals, `oauth_version="1.0"`)
+}
+
+func (s *OAuthS) TestSignWithConsumer(c *C) {
+	oauth := lpad.OAuth{
+		Token: "my token",
+		TokenSecret: "my secret",
+		Consumer: "my consumer",
+	}
+
+	req, err := http.NewRequest("GET", "http://example.com/path", nil)
+	c.Assert(err, IsNil)
+
+	err = oauth.Sign(req)
+	c.Assert(err, IsNil)
+
+	auth := req.Header.Get("Authorization")
+	c.Assert(auth, Matches, `.* oauth_consumer_key="my\+consumer".*`)
+}
+
+func (s *OAuthS) TestSignError(c *C) {
+	err := (&lpad.OAuth{}).Sign(nil)
+	c.Assert(err, Matches, `OAuth can't Sign without a token \(missing Login\?\)`)
+	err = (&lpad.OAuth{Token: "mytoken"}).Sign(nil)
+	c.Assert(err, Matches, `OAuth can't Sign without a token secret \(missing Login\?\)`)
+}
+
+func (s *OAuthS) TestDontLoginWithExistingSecret(c *C) {
+	callback := func(oauth *lpad.OAuth) os.Error {
+		c.Error("Callback called!")
+		return os.NewError("STOP!")
+	}
+	oauth := lpad.OAuth{
+		Token: "initialtoken",
+		TokenSecret: "initialsecret",
+		Callback: callback,
+	}
+
+	err := oauth.Login(testServer.URL)
+	c.Assert(err, IsNil)
+}
+
+func fakeHome(c *C) (dir string, restore func()) {
+	realHome := os.Getenv("HOME")
+	fakeHome := c.MkDir()
+	restore = func() {
+		os.Setenv("HOME", realHome)
+	}
+	os.Setenv("HOME", fakeHome)
+	return fakeHome, restore
+}
+
+func (s *OAuthS) TestStoredOAuthLoginWithStored(c *C) {
+	home, restore := fakeHome(c)
+	defer restore()
+
+	file, err := os.Create(filepath.Join(home, ".lpad_oauth"))
+	c.Assert(err, IsNil)
+	data, err := json.Marshal(M{"Token": "mytoken", "TokenSecret": "mysecret"})
+	c.Assert(err, IsNil)
+	file.Write(data)
+	file.Close()
+
+	oauth := lpad.StoredOAuth{}
+	oauth.Login("baseURL")
+
+	c.Assert(oauth.Token, Equals, "mytoken")
+	c.Assert(oauth.TokenSecret, Equals, "mysecret")
+}
+
+func (s *OAuthS) TestStoredOAuthLogin(c *C) {
+	home, restore := fakeHome(c)
+	defer restore()
+
+	testServer.PrepareResponse(200, nil, "oauth_token=mytoken1&oauth_token_secret=mysecret1")
+	testServer.PrepareResponse(200, nil, "oauth_token=mytoken2&oauth_token_secret=mysecret2")
+
+	oauth := lpad.StoredOAuth{}
+	err := oauth.Login(testServer.URL)
+	c.Assert(err, IsNil)
+
+	req1 := testServer.WaitRequest()
+	c.Assert(req1.URL.RawPath, Equals, "/+request-token")
+
+	req2 := testServer.WaitRequest()
+	c.Assert(req2.Method, Equals, "POST")
+	c.Assert(req2.URL.RawPath, Equals, "/+access-token")
+
+	c.Assert(oauth.Token, Equals, "mytoken2")
+	c.Assert(oauth.TokenSecret, Equals, "mysecret2")
+	c.Assert(oauth.AuthURL, Equals, "")
+
+	data, err := ioutil.ReadFile(filepath.Join(home, ".lpad_oauth"))
+	c.Assert(err, IsNil)
+
+	result := lpad.OAuth{}
+	err = json.Unmarshal(data, &result)
+	c.Assert(err, IsNil)
+	c.Assert(result.Token, Equals, "mytoken2")
+	c.Assert(result.TokenSecret, Equals, "mysecret2")
+}
+
+func (s *OAuthS) TestStoredOAuthSignForwards(c *C) {
+	err := (&lpad.StoredOAuth{}).Sign(nil)
+	c.Assert(err, Matches, `OAuth can't Sign without a token \(missing Login\?\)`)
+}
+
