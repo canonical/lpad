@@ -1,8 +1,11 @@
 package lpad_test
 
 import (
+	"fmt"
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
+	"os"
+	"strconv"
 )
 
 var _ = Suite(&ResS{})
@@ -26,6 +29,24 @@ func (s *ResS) TestMapInit(c *C) {
 	c.Assert(m, NotNil)
 	m["a"] = 1
 	c.Assert(r.Map()["a"], Equals, 1)
+}
+
+func (s *ResS) TestFieldMethods(c *C) {
+	m := M{
+		"n": nil,
+		"s": "string",
+		"f": 42.1,
+	}
+	r := lpad.NewResource(nil, "", "", m)
+	c.Assert(r.StringField("s"), Equals, "string")
+	c.Assert(r.StringField("n"), Equals, "")
+	c.Assert(r.StringField("x"), Equals, "")
+	c.Assert(r.IntField("f"), Equals, 42)
+	c.Assert(r.IntField("n"), Equals, 0)
+	c.Assert(r.IntField("x"), Equals, 0)
+	c.Assert(r.FloatField("f"), Equals, 42.1)
+	c.Assert(r.FloatField("n"), Equals, 0.0)
+	c.Assert(r.FloatField("x"), Equals, 0.0)
 }
 
 func (s *ResS) TestGet(c *C) {
@@ -216,9 +237,128 @@ func (s *ResS) TestLink(c *C) {
 	for _, test := range locationTests {
 		m := map[string]interface{}{"some_link": test.Location}
 		r1 := lpad.NewResource(session, test.BaseURL, test.URL, m)
-		r2 := r1.Link("some_link")
+		r2, err := r1.Link("some_link")
+		c.Assert(err, IsNil)
 		c.Assert(r2.URL(), Equals, test.Result)
 		c.Assert(r2.BaseURL(), Equals, test.BaseURL)
 		c.Assert(r2.Session(), Equals, session)
+
+		r3, err := r1.Link("bad_link")
+		c.Assert(err, Matches, `Field "bad_link" not found in resource`)
+		c.Assert(r3, Equals, nil)
 	}
+}
+
+func (s *ResS) TestGetLocation(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
+	r := lpad.NewResource(nil, "", "", nil)
+	other, err := r.GetLocation(testServer.URL + "/link")
+	c.Assert(err, IsNil)
+	c.Assert(other.Map()["ok"], Equals, true)
+}
+
+func (s *ResS) TestGetLink(c *C) {
+	m := M{
+		"some_link": testServer.URL + "/link",
+	}
+	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
+	r := lpad.NewResource(nil, "", "", m)
+	other, err := r.GetLink("some_link")
+	c.Assert(err, IsNil)
+	c.Assert(other.Map()["ok"], Equals, true)
+}
+
+func (s *ResS) TestCollection(c *C) {
+	data0 := `{
+		"total_size": 5,
+		"start": 1,
+		"next_collection_link": "%s",
+		"entries": [{"self_link": "http://self1"}, {"self_link": "http://self2"}]
+	}`
+	data1 := `{
+		"total_size": 5,
+		"start": 3,
+		"entries": [{"self_link": "http://self3"}, {"self_link": "http://self4"}]
+	}`
+	testServer.PrepareResponse(200, jsonType, fmt.Sprintf(data0, testServer.URL + "/next"))
+	testServer.PrepareResponse(200, jsonType, data1)
+
+	r := lpad.NewResource(nil, "", testServer.URL + "/mycol", nil)
+
+	err := r.Get(nil)
+	c.Assert(err, IsNil)
+
+	c.Assert(r.ListSize(), Equals, 5)
+	c.Assert(r.ListStart(), Equals, 1)
+
+	i := 1
+	err = r.ListIter(func(r lpad.Resource) os.Error {
+		c.Assert(r.Map()["self_link"], Equals, "http://self" + strconv.Itoa(i))
+		i++
+		return nil
+	})
+	c.Assert(err, IsNil)
+	c.Assert(i, Equals, 5)
+}
+
+func (s *ResS) TestCollectionGetError(c *C) {
+	data := `{
+		"total_size": 2,
+		"start": 0,
+		"next_collection_link": "%s",
+		"entries": [{"self_link": "http://self1"}]
+	}`
+	testServer.PrepareResponse(200, jsonType, fmt.Sprintf(data, testServer.URL + "/next"))
+	testServer.PrepareResponse(500, jsonType, "")
+
+	r := lpad.NewResource(nil, "", testServer.URL + "/mycol", nil)
+
+	err := r.Get(nil)
+	c.Assert(err, IsNil)
+
+	i := 0
+	err = r.ListIter(func(r lpad.Resource) os.Error {
+		i++
+		return nil
+	})
+	c.Assert(err, Matches, ".* returned 500 .*")
+	c.Assert(i, Equals, 1)
+}
+
+func (s *ResS) TestCollectionNoEntries(c *C) {
+	data := `{"total_size": 2, "start": 0}`
+	testServer.PrepareResponse(200, jsonType, data)
+	r := lpad.NewResource(nil, "", testServer.URL + "/mycol", nil)
+
+	err := r.Get(nil)
+	c.Assert(err, IsNil)
+
+	i := 0
+	err = r.ListIter(func(r lpad.Resource) os.Error {
+		i++
+		return nil
+	})
+	c.Assert(err, Matches, "No entries found in resource")
+	c.Assert(i, Equals, 0)
+}
+
+func (s *ResS) TestCollectionIterError(c *C) {
+	data := `{
+		"total_size": 2,
+		"start": 0,
+		"entries": [{"self_link": "http://self1"}, {"self_link": "http://self2"}]
+	}`
+	testServer.PrepareResponse(200, jsonType, data)
+	r := lpad.NewResource(nil, "", testServer.URL + "/mycol", nil)
+
+	err := r.Get(nil)
+	c.Assert(err, IsNil)
+
+	i := 0
+	err = r.ListIter(func(r lpad.Resource) os.Error {
+		i++
+		return os.ErrorString("Stop!")
+	})
+	c.Assert(err, Matches, "Stop!")
+	c.Assert(i, Equals, 1)
 }

@@ -12,7 +12,7 @@ type ModelS struct {
 	HTTPSuite
 }
 
-type ModelI struct{
+type ModelI struct {
 	SuiteI
 }
 
@@ -31,13 +31,60 @@ func (s *ModelS) TestRootMe(c *C) {
 	c.Assert(req.URL.Path, Equals, "/people/+me")
 }
 
-func (s *ModelS) TestPersonDisplayName(c *C) {
+func (s *ModelS) TestPerson(c *C) {
 	m := M{
 		"display_name": "Joe",
 	}
 	person := lpad.Person{lpad.NewResource(nil, "", "", m)}
 	c.Assert(person.DisplayName(), Equals, "Joe")
+}
 
-	person = lpad.Person{lpad.NewResource(nil, "", "", nil)}
-	c.Assert(person.DisplayName(), Equals, "")
+func (s *ModelS) TestIRCNick(c *C) {
+	m := M{
+		"resource_type_link": "https://api.launchpad.net/1.0/#irc_id",
+		"self_link":          "https://api.launchpad.net/1.0/~lpad-test/+ircnick/28983",
+		"person_link":        "https://api.launchpad.net/1.0/~lpad-test",
+		"web_link":           "https://api.launchpad.net/~lpad-test/+ircnick/28983",
+		"nickname":           "canonical-nick",
+		"network":            "irc.canonical.com",
+		"http_etag":          "\"the-etag\"",
+	}
+	nick := lpad.IRCNick{lpad.NewResource(nil, "", "", m)}
+	c.Assert(nick.Nick(), Equals, "canonical-nick")
+	c.Assert(nick.Network(), Equals, "irc.canonical.com")
+}
+
+func (s *ModelS) TestPersonNicks(c *C) {
+	m := M{
+		"irc_nicknames_collection_link": testServer.URL + "/~lpad-test/irc_nicknames",
+	}
+	data := `{
+		"total_size": 2,
+		"start": 0,
+		"entries": [{
+			"resource_type_link": "https://api.launchpad.net/1.0/#irc_id",
+			"network": "irc.canonical.com",
+			"person_link": "https://api.launchpad.net/1.0/~lpad-test",
+			"web_link": "https://api.launchpad.net/~lpad-test/+ircnick/28983",
+			"http_etag": "\"the-etag1\"",
+			"self_link": "https://api.launchpad.net/1.0/~lpad-test/+ircnick/28983",
+			"nickname": "canonical-nick"
+		}, {
+			"resource_type_link": "https://api.launchpad.net/1.0/#irc_id",
+			"network": "irc.freenode.net",
+			"person_link": "https://api.launchpad.net/1.0/~lpad-test",
+			"web_link": "https://api.launchpad.net/~lpad-test/+ircnick/28982",
+			"http_etag": "\"the-etag2\"",
+			"self_link": "https://api.launchpad.net/1.0/~lpad-test/+ircnick/28982",
+			"nickname": "freenode-nick"
+		}],
+		"resource_type_link": "https://api.launchpad.net/1.0/#irc_id-page-resource"
+	}`
+	testServer.PrepareResponse(200, jsonType, data)
+	person := lpad.Person{lpad.NewResource(nil, "", "", m)}
+	nicks, err := person.IRCNicks()
+	c.Assert(err, IsNil)
+	c.Assert(len(nicks), Equals, 2)
+	c.Assert(nicks[0].Nick(), Equals, "canonical-nick") 
+	c.Assert(nicks[1].Nick(), Equals, "freenode-nick") 
 }

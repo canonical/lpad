@@ -34,7 +34,7 @@ func (s *HTTPSuite) SetUpSuite(c *C) {
 }
 
 func (s *HTTPSuite) TearDownTest(c *C) {
-	testServer.FlushRequests()
+	testServer.Flush()
 }
 
 type TestHTTPServer struct {
@@ -84,10 +84,11 @@ func (s *TestHTTPServer) Start() {
 }
 
 // FlushRequests discards requests which were not yet consumed by WaitRequest.
-func (s *TestHTTPServer) FlushRequests() {
+func (s *TestHTTPServer) Flush() {
 	for {
 		select {
 		case <-s.request:
+		case <-s.response:
 		default:
 			return
 		}
