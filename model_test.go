@@ -54,6 +54,14 @@ func (s *ModelS) TestIRCNick(c *C) {
 	c.Assert(nick.Network(), Equals, "irc.canonical.com")
 }
 
+func (s *ModelS) TestIRCNickChange(c *C) {
+	nick := lpad.IRCNick{lpad.NewResource(nil, "", "", nil)}
+	nick.SetNick("mynick")
+	nick.SetNetwork("mynetwork")
+	c.Assert(nick.Nick(), Equals, "mynick")
+	c.Assert(nick.Network(), Equals, "mynetwork")
+}
+
 func (s *ModelS) TestPersonNicks(c *C) {
 	m := M{
 		"irc_nicknames_collection_link": testServer.URL + "/~lpad-test/irc_nicknames",

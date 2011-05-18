@@ -24,6 +24,11 @@ func main() {
 	check(err)
 	for _, nick := range nicks {
 		println(nick.Network(), "=", nick.Nick())
+		if nick.Network() == "irc.freenode.net" {
+			nick.SetNick("newer-freenode-nick")
+			err := nick.Patch()
+			check(err)
+		}
 	}
 
 	//langs, err := me.GetLink("irc_nicknames_collection_link")

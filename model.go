@@ -46,6 +46,14 @@ func (nick IRCNick) Nick() string {
 	return nick.StringField("nickname")
 }
 
+func (nick IRCNick) SetNick(n string) {
+	nick.SetField("nickname", n)
+}
+
 func (nick IRCNick) Network() string {
 	return nick.StringField("network")
+}
+
+func (nick IRCNick) SetNetwork(n string) {
+	nick.SetField("network", n)
 }

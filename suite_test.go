@@ -1,10 +1,12 @@
 package lpad_test
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	. "launchpad.net/gocheck"
 	"http"
+	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -95,8 +97,21 @@ func (s *TestHTTPServer) Flush() {
 	}
 }
 
+func body(req *http.Request) string {
+	data, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		panic(err)
+	}
+	return string(data)
+}
+
 func (s *TestHTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
+	data, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		panic(err)
+	}
+	req.Body = ioutil.NopCloser(bytes.NewBuffer(data))
 	s.request <- req
 	var resp *testResponse
 	select {

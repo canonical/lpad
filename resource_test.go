@@ -2,6 +2,7 @@ package lpad_test
 
 import (
 	"fmt"
+	"json"
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
 	"os"
@@ -204,6 +205,69 @@ func (s *ResS) TestPostSign(c *C) {
 	c.Assert(req.URL.Path, Equals, "/myresource")
 	c.Assert(req.Header["Authorization"], NotNil)
 	c.Assert(req.Header["Authorization"][0], Matches, "OAuth.*")
+}
+
+func (s *ResS) TestPatch(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{"a": 1, "b": 2}`)
+	testServer.PrepareResponse(200, nil, "")
+
+	r := lpad.NewResource(nil, "", testServer.URL + "/myresource", nil)
+	err := r.Get(nil)
+	c.Assert(err, IsNil)
+
+	r.SetField("a", 3)
+	r.SetField("c", "string")
+	c.Assert(r.Map()["a"], Equals, 3.0)
+	c.Assert(r.Map()["b"], Equals, 2.0)
+	c.Assert(r.Map()["c"], Equals, "string")
+
+	err = r.Patch()
+	c.Assert(err, IsNil)
+
+	req1 := testServer.WaitRequest()
+	c.Assert(req1.Method, Equals, "GET")
+	c.Assert(req1.URL.Path, Equals, "/myresource")
+
+	req2 := testServer.WaitRequest()
+	c.Assert(req2.Method, Equals, "PATCH")
+	c.Assert(req2.URL.Path, Equals, "/myresource")
+	c.Assert(req2.Header.Get("Accept"), Equals, "application/json")
+	c.Assert(req2.Header.Get("Content-Type"), Equals, "application/json")
+
+	var m M
+	err = json.Unmarshal([]byte(body(req2)), &m)
+	c.Assert(err, IsNil)
+	c.Assert(m, Equals, M{"a": 3.0, "c": "string"})
+}
+
+func (s *ResS) TestPatchWithContent(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{"a": 1, "b": 2}`)
+	testServer.PrepareResponse(209, jsonType, `{"new": "content"}`)
+
+	r := lpad.NewResource(nil, "", testServer.URL + "/myresource", nil)
+	err := r.Get(nil)
+	c.Assert(err, IsNil)
+
+	r.SetField("a", 3)
+
+	err = r.Patch()
+	c.Assert(err, IsNil)
+	c.Assert(r.Map(), Equals, map[string]interface{}{"new": "content"})
+
+	req1 := testServer.WaitRequest()
+	c.Assert(req1.Method, Equals, "GET")
+	c.Assert(req1.URL.Path, Equals, "/myresource")
+
+	req2 := testServer.WaitRequest()
+	c.Assert(req2.Method, Equals, "PATCH")
+	c.Assert(req2.URL.Path, Equals, "/myresource")
+	c.Assert(req2.Header.Get("Accept"), Equals, "application/json")
+	c.Assert(req2.Header.Get("Content-Type"), Equals, "application/json")
+
+	var m M
+	err = json.Unmarshal([]byte(body(req2)), &m)
+	c.Assert(err, IsNil)
+	c.Assert(m, Equals, M{"a": 3.0})
 }
 
 type locationTest struct {

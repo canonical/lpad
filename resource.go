@@ -64,6 +64,9 @@ type Resource interface {
 	// set to a float64 value, or zero otherwise.
 	FloatField(key string) float64
 
+	// SetField changes the named field with the provided value.
+	SetField(key string, value interface{})
+
 	// Location returns a new resource for a location which may be a
 	// full URL, or an absolute path (based on the resource's BaseURL),
 	// or a path relative to the resource itself (based on the
@@ -94,6 +97,10 @@ type Resource interface {
 	// provided as the parameters for the POST request.
 	Post(params Params) (Resource, os.Error)
 
+	// Patch issues an HTTP PATCH request to modify the server resource
+	// with the local changes.
+	Patch() os.Error
+
 	// ListSize returns the total number of entries in a collection.
 	ListSize() int
 
@@ -111,6 +118,7 @@ type resource struct {
 	baseurl string
 	url     string
 	m       map[string]interface{}
+	patch   map[string]interface{}
 }
 
 // NewResource creates a new resource type.  Creating resources explicitly
@@ -119,7 +127,7 @@ type resource struct {
 // Link and Location methods on the Resource interface for more convenient
 // ways to create resources.
 func NewResource(session *Session, baseurl, url string, m map[string]interface{}) Resource {
-	return &resource{session, baseurl, url, m}
+	return &resource{session, baseurl, url, m, nil}
 }
 
 func (r *resource) Session() *Session {
@@ -160,6 +168,25 @@ func (r *resource) FloatField(key string) float64 {
 		return v
 	}
 	return 0
+}
+
+func (r *resource) SetField(key string, value interface{}) {
+	if r.patch == nil {
+		r.patch = make(map[string]interface{})
+	}
+	p := r.patch
+	m := r.Map()
+	var newv interface{}
+	switch v := value.(type) {
+	case int:
+		newv = float64(v)
+	case string:
+		newv = v
+	default:
+		panic(fmt.Sprintf("Unsupported value type for SetField: %#v", value))
+	}
+	p[key] = newv
+	m[key] = newv
 }
 
 func (r *resource) join(part string) string {
@@ -216,12 +243,21 @@ func (r *resource) GetLink(key string) (linkr Resource, err os.Error) {
 }
 
 func (r *resource) Get(params Params) os.Error {
-	_, err := r.do("GET", params)
+	_, err := r.do("GET", params, nil)
 	return err
 }
 
 func (r *resource) Post(params Params) (other Resource, err os.Error) {
-	return r.do("POST", params)
+	return r.do("POST", params, nil)
+}
+
+func (r *resource) Patch() os.Error {
+	data, err := json.Marshal(r.patch)
+	if err != nil {
+		return err
+	}
+	_, err = r.do("PATCH", nil, data)
+	return err
 }
 
 func (r *resource) ListSize() int {
@@ -262,7 +298,7 @@ func (r *resource) ListIter(f func(Resource) os.Error) os.Error {
 	return nil
 }
 
-func (r *resource) do(method string, params map[string]string) (other Resource, err os.Error) {
+func (r *resource) do(method string, params Params, body []byte) (other Resource, err os.Error) {
 	query := http.EncodeQuery(multimap(params))
 	for redirect := 0; ; redirect++ {
 		req, err := http.NewRequest(method, r.url, nil)
@@ -271,14 +307,20 @@ func (r *resource) do(method string, params map[string]string) (other Resource, 
 			return nil, err
 		}
 
+		ctype := "application/json"
 		if method == "POST" {
-			req.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(query)))
-			req.Header["Content-Type"] = []string{"application/x-www-form-urlencoded"}
-			req.Header["Content-Length"] = []string{strconv.Itoa(len(query))}
-			req.ContentLength = int64(len(query))
-
+			body = []byte(query)
+			query = ""
+			ctype = "application/x-www-form-urlencoded"
 		} else {
 			req.URL.RawQuery = query
+		}
+
+		if body != nil {
+			req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+			req.Header["Content-Type"] = []string{ctype}
+			req.Header["Content-Length"] = []string{strconv.Itoa(len(body))}
+			req.ContentLength = int64(len(body))
 		}
 
 		if r.session != nil {
@@ -292,7 +334,7 @@ func (r *resource) do(method string, params map[string]string) (other Resource, 
 		if err != nil {
 			return nil, err
 		}
-		//dump, err := http.DumpResponse(resp, false)
+		//dump, err := http.DumpResponse(resp, true)
 		//println("Response:", string(dump))
 
 		body, err := ioutil.ReadAll(resp.Body)
@@ -319,11 +361,15 @@ func (r *resource) do(method string, params map[string]string) (other Resource, 
 			continue
 		}
 
-		if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != 209 {
 			return nil, &Error{resp.StatusCode, body}
 		}
 
-		ctype := resp.Header.Get("Content-Type")
+		if method == "PATCH" && resp.StatusCode != 209 {
+			return nil, nil
+		}
+
+		ctype = resp.Header.Get("Content-Type")
 		if ctype != "application/json" {
 			return nil, os.NewError("Non-JSON content-type: " + ctype)
 		}
