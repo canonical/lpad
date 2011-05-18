@@ -26,6 +26,13 @@ func (person Person) DisplayName() string {
 	return person.StringField("display_name")
 }
 
+// SetDisplayName changes the person's name as it would be displayed
+// throughout Launchpad.  Most people use their full name.
+// Patch must be called to commit all changes.
+func (person Person) SetDisplayName(name string) {
+	person.SetField("display_name", name)
+}
+
 func (person Person) IRCNicks() (nicks []IRCNick, err os.Error) {
 	list, err := person.GetLink("irc_nicknames_collection_link")
 	if err != nil {
@@ -42,18 +49,25 @@ type IRCNick struct {
 	Resource
 }
 
+// Nick returns the person's nick on an IRC network.
 func (nick IRCNick) Nick() string {
 	return nick.StringField("nickname")
 }
 
+// SetNick changes the person's nick on an IRC network.
+// Patch must be called to commit all changes.
 func (nick IRCNick) SetNick(n string) {
 	nick.SetField("nickname", n)
 }
 
+// Network returns the IRC network this nick is associated to.
 func (nick IRCNick) Network() string {
 	return nick.StringField("network")
 }
 
+// SetNetwork changes the IRC network this nick is associated to.
+// Patch must be called to commit all changes.
 func (nick IRCNick) SetNetwork(n string) {
 	nick.SetField("network", n)
 }
+

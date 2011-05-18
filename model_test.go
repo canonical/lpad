@@ -39,6 +39,12 @@ func (s *ModelS) TestPerson(c *C) {
 	c.Assert(person.DisplayName(), Equals, "Joe")
 }
 
+func (s *ModelS) TestPersonChange(c *C) {
+	person := lpad.Person{lpad.NewResource(nil, "", "", nil)}
+	person.SetDisplayName("Name")
+	c.Assert(person.DisplayName(), Equals, "Name")
+}
+
 func (s *ModelS) TestIRCNick(c *C) {
 	m := M{
 		"resource_type_link": "https://api.launchpad.net/1.0/#irc_id",
