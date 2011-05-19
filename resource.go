@@ -64,6 +64,10 @@ type Resource interface {
 	// set to a float64 value, or zero otherwise.
 	FloatField(key string) float64
 
+	// BoolField returns the named resource field if it exists and is
+	// set to a bool value, or false otherwise.
+	BoolField(key string) bool
+
 	// SetField changes the named field with the provided value.
 	SetField(key string, value interface{})
 
@@ -101,16 +105,17 @@ type Resource interface {
 	// with the local changes.
 	Patch() os.Error
 
-	// ListSize returns the total number of entries in a collection.
-	ListSize() int
+	// TotalSize returns the total number of entries in a collection.
+	TotalSize() int
 
-	// ListStart returns the offset of the first resource in a collection.
-	ListStart() int
+	// StartIndex returns the offset of the first resource in a collection.
+	StartIndex() int
 
-	// ListIter iterates over every element in a collection and calls the
+	// For iterates over every element in a collection and calls the
 	// provided function for each entry.  If the function returns a
-	// non-nil err value, the iteration will stop.
-	ListIter(func(r Resource) os.Error) os.Error
+	// non-nil err value, the iteration will stop.  Watch out for
+	// very large collections!
+	For(func(r Resource) os.Error) os.Error
 }
 
 type resource struct {
@@ -168,6 +173,13 @@ func (r *resource) FloatField(key string) float64 {
 		return v
 	}
 	return 0
+}
+
+func (r *resource) BoolField(key string) bool {
+	if v, ok := r.Map()[key].(bool); ok {
+		return v
+	}
+	return false
 }
 
 func (r *resource) SetField(key string, value interface{}) {
@@ -260,15 +272,15 @@ func (r *resource) Patch() os.Error {
 	return err
 }
 
-func (r *resource) ListSize() int {
+func (r *resource) TotalSize() int {
 	return r.IntField("total_size")
 }
 
-func (r *resource) ListStart() int {
+func (r *resource) StartIndex() int {
 	return r.IntField("start")
 }
 
-func (r *resource) ListIter(f func(Resource) os.Error) os.Error {
+func (r *resource) For(f func(Resource) os.Error) os.Error {
 	for {
 		entries, ok := r.Map()["entries"].([]interface{})
 		if !ok {
@@ -298,10 +310,11 @@ func (r *resource) ListIter(f func(Resource) os.Error) os.Error {
 	return nil
 }
 
-func (r *resource) do(method string, params Params, body []byte) (other Resource, err os.Error) {
+func (r *resource) do(method string, params Params, body []byte) (res *resource, err os.Error) {
+	res = r
 	query := http.EncodeQuery(multimap(params))
 	for redirect := 0; ; redirect++ {
-		req, err := http.NewRequest(method, r.url, nil)
+		req, err := http.NewRequest(method, res.url, nil)
 		req.Header["Accept"] = []string{"application/json"}
 		if err != nil {
 			return nil, err
@@ -313,7 +326,10 @@ func (r *resource) do(method string, params Params, body []byte) (other Resource
 			query = ""
 			ctype = "application/x-www-form-urlencoded"
 		} else {
-			req.URL.RawQuery = query
+			if req.URL.RawQuery != "" {
+				req.URL.RawQuery += "&"
+			}
+			req.URL.RawQuery += query
 		}
 
 		if body != nil {
@@ -343,21 +359,19 @@ func (r *resource) do(method string, params Params, body []byte) (other Resource
 		location := resp.Header.Get("Location")
 
 		if method == "POST" {
-			// When posting do not follow redirects but instead
-			// return a resource pointing to the new resource.
-			other := resource{url: r.url, session: r.session}
-			if location != "" {
-				other.url = location
+			res = &resource{url: r.url, baseurl: r.baseurl, session: r.session}
+			if resp.StatusCode == 201 && location != "" {
+				res.url = location
+				return res.do("GET", nil, nil)
 			}
-			return &other, nil
 		}
 
-		if shouldRedirect(resp.StatusCode) && method == "GET" {
+		if method == "GET" && shouldRedirect(resp.StatusCode) {
 			if location == "" {
 				msg := "Got redirection status " + strconv.Itoa(resp.StatusCode) + " without a Location"
 				return nil, os.NewError(msg)
 			}
-			r.url = location
+			res.url = location
 			continue
 		}
 
@@ -377,8 +391,8 @@ func (r *resource) do(method string, params Params, body []byte) (other Resource
 		if err != nil {
 			return nil, err
 		}
-		r.m = make(map[string]interface{})
-		return nil, json.Unmarshal(body, &r.m)
+		res.m = make(map[string]interface{})
+		return res, json.Unmarshal(body, &res.m)
 	}
 
 	panic("unreachable")

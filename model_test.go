@@ -3,6 +3,7 @@ package lpad_test
 import (
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
+	"os"
 )
 
 var _ = Suite(&ModelS{})
@@ -31,18 +32,134 @@ func (s *ModelS) TestRootMe(c *C) {
 	c.Assert(req.URL.Path, Equals, "/people/+me")
 }
 
+func (s *ModelS) TestRootFindMembers(c *C) {
+	data := `{
+		"total_size": 2,
+		"start": 0,
+		"entries": [{
+			"self_link": "http://self0",
+			"display_name": "Name0",
+			"is_team": false
+		}, {
+			"self_link": "http://self1",
+			"display_name": "Name1",
+			"is_team": true
+		}]
+	}`
+	testServer.PrepareResponse(200, jsonType, data)
+	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+	list, err := root.FindMembers("someuser")
+	c.Assert(err, IsNil)
+	c.Assert(list.TotalSize(), Equals, 2)
+
+	names := []string{}
+	list.For(func(r lpad.Resource) os.Error {
+		if r.BoolField("is_team") {
+			t := r.(lpad.Team)
+			names = append(names, t.DisplayName())
+		} else {
+			p := r.(lpad.Person)
+			names = append(names, p.DisplayName())
+		}
+		return nil
+	})
+	c.Assert(names, Equals, []string{"Name0", "Name1"})
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/people")
+	c.Assert(req.Form["ws.op"], Equals, []string{"find"})
+	c.Assert(req.Form["text"], Equals, []string{"someuser"})
+}
+
+func (s *ModelS) TestRootFindPeople(c *C) {
+	data := `{
+		"total_size": 2,
+		"start": 0,
+		"entries": [{
+			"self_link": "http://self0",
+			"display_name": "Name0"
+		}, {
+			"self_link": "http://self1",
+			"display_name": "Name1"
+		}]
+	}`
+	testServer.PrepareResponse(200, jsonType, data)
+	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+	list, err := root.FindPeople("someuser")
+	c.Assert(err, IsNil)
+	c.Assert(list.TotalSize(), Equals, 2)
+
+	names := []string{}
+	list.For(func(p lpad.Person) os.Error {
+		names = append(names, p.DisplayName())
+		return nil
+	})
+	c.Assert(names, Equals, []string{"Name0", "Name1"})
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/people")
+	c.Assert(req.Form["ws.op"], Equals, []string{"findPerson"})
+	c.Assert(req.Form["text"], Equals, []string{"someuser"})
+}
+
+func (s *ModelS) TestRootFindTeams(c *C) {
+	data := `{
+		"total_size": 2,
+		"start": 0,
+		"entries": [{
+			"self_link": "http://self0",
+			"display_name": "Name0",
+			"is_team": true
+		}, {
+			"self_link": "http://self1",
+			"display_name": "Name1",
+			"is_team": true
+		}]
+	}`
+	testServer.PrepareResponse(200, jsonType, data)
+	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+	list, err := root.FindTeams("someuser")
+	c.Assert(err, IsNil)
+	c.Assert(list.TotalSize(), Equals, 2)
+
+	names := []string{}
+	list.For(func(t lpad.Team) os.Error {
+		names = append(names, t.DisplayName())
+		return nil
+	})
+	c.Assert(names, Equals, []string{"Name0", "Name1"})
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/people")
+	c.Assert(req.Form["ws.op"], Equals, []string{"findTeam"})
+	c.Assert(req.Form["text"], Equals, []string{"someuser"})
+}
+
 func (s *ModelS) TestPerson(c *C) {
 	m := M{
 		"display_name": "Joe",
 	}
 	person := lpad.Person{lpad.NewResource(nil, "", "", m)}
 	c.Assert(person.DisplayName(), Equals, "Joe")
-}
-
-func (s *ModelS) TestPersonChange(c *C) {
-	person := lpad.Person{lpad.NewResource(nil, "", "", nil)}
 	person.SetDisplayName("Name")
 	c.Assert(person.DisplayName(), Equals, "Name")
+}
+
+func (s *ModelS) TestTeam(c *C) {
+	m := M{
+		"name": "myteam",
+		"display_name": "My Team",
+	}
+	team := lpad.Team{lpad.NewResource(nil, "", "", m)}
+	c.Assert(team.Name(), Equals, "myteam")
+	team.SetName("ateam")
+	c.Assert(team.Name(), Equals, "ateam")
+	c.Assert(team.DisplayName(), Equals, "My Team")
+	team.SetDisplayName("A Team")
+	c.Assert(team.DisplayName(), Equals, "A Team")
 }
 
 func (s *ModelS) TestIRCNick(c *C) {

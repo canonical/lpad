@@ -15,6 +15,81 @@ func (root Root) Me() (p Person, err os.Error) {
 	return Person{me}, err
 }
 
+// FindPeople returns a PersonList containing all Person accounts whose
+// Name, DisplayName or email address match text.
+func (root Root) FindPeople(text string) (list PersonList, err os.Error) {
+	list = PersonList{root.Location("/people")}
+	err = list.Get(Params{"ws.op": "findPerson", "text": text})
+	return
+}
+
+// FindTeams returns a TeamList containing all Team accounts whose
+// Name, DisplayName or email address match text.
+func (root Root) FindTeams(text string) (list TeamList, err os.Error) {
+	list = TeamList{root.Location("/people")}
+	err = list.Get(Params{"ws.op": "findTeam", "text": text})
+	return
+}
+
+// FindMembers returns a MemberList containing all Person or Team accounts
+// whose Name, DisplayName or email address match text.
+func (root Root) FindMembers(text string) (list MemberList, err os.Error) {
+	list = MemberList{root.Location("/people")}
+	err = list.Get(Params{"ws.op": "find", "text": text})
+	return
+}
+
+// The MemberList type encapsulates a mixed list containing Person and Team
+// elements for iteration.
+type MemberList struct {
+	Resource
+}
+
+// For iterates over the list of people and teams and calls f for each one.
+// If f returns a non-nil error, iteration will stop and the error will be
+// returned as the result of For.
+func (list MemberList) For(f func(r Resource) os.Error) os.Error {
+	return list.Resource.For(func(r Resource) os.Error {
+		if r.BoolField("is_team") {
+			f(Team{r})
+		} else {
+			f(Person{r})
+		}
+		return nil
+	})
+}
+
+// The PersonList type encapsulates a list of Person elements for iteration.
+type PersonList struct {
+	Resource
+}
+
+// For iterates over the list of people and calls f for each one.  If f
+// returns a non-nil error, iteration will stop and the error will be
+// returned as the result of For.
+func (list PersonList) For(f func(p Person) os.Error) os.Error {
+	return list.Resource.For(func(r Resource) os.Error {
+		f(Person{r})
+		return nil
+	})
+}
+
+// The TeamList type encapsulates a list of Team elements for iteration.
+type TeamList struct {
+	Resource
+}
+
+// For iterates over the list of teams and calls f for each one.  If f
+// returns a non-nil error, iteration will stop and the error will be
+// returned as the result of For.
+func (list TeamList) For(f func(t Team) os.Error) os.Error {
+	return list.Resource.For(func(r Resource) os.Error {
+		f(Team{r})
+		return nil
+	})
+}
+
+
 // The Person type encapsulates access to details about a person in Launchpad.
 type Person struct {
 	Resource
@@ -33,12 +108,13 @@ func (person Person) SetDisplayName(name string) {
 	person.SetField("display_name", name)
 }
 
+// IRCNicks returns a list of all IRC nicks for the person.
 func (person Person) IRCNicks() (nicks []IRCNick, err os.Error) {
 	list, err := person.GetLink("irc_nicknames_collection_link")
 	if err != nil {
 		return nil, err
 	}
-	list.ListIter(func(r Resource) os.Error {
+	list.For(func(r Resource) os.Error {
 		nicks = append(nicks, IRCNick{r})
 		return nil
 	})
@@ -71,3 +147,33 @@ func (nick IRCNick) SetNetwork(n string) {
 	nick.SetField("network", n)
 }
 
+// The Team type encapsulates access to details about a team in Launchpad.
+type Team struct {
+	Resource
+}
+
+// Name returns the team's name.  This is a short unique name, beginning with a
+// lower-case letter or number, and containing only letters, numbers, dots,
+// hyphens, or plus signs.
+func (team Team) Name() string {
+	return team.StringField("name")
+}
+
+// SetName changes the team's name.  This is a short unique name, beginning
+// with a lower-case letter or number, and containing only letters, numbers,
+// dots, hyphens, or plus signs.  Patch must be called to commit all changes.
+func (team Team) SetName(name string) {
+	team.SetField("name", name)
+}
+
+// DisplayName returns the team's name as it would be displayed
+// throughout Launchpad.
+func (team Team) DisplayName() string {
+	return team.StringField("display_name")
+}
+
+// SetDisplayName changes the team's name as it would be displayed
+// throughout Launchpad.  Patch must be called to commit all changes.
+func (team Team) SetDisplayName(name string) {
+	team.SetField("display_name", name)
+}
