@@ -37,7 +37,7 @@ func (oauth *OAuth) consumer() string {
 	return oauth.Consumer
 }
 
-func (oauth *OAuth) requestToken(path string, form map[string]string) (err os.Error) {
+func (oauth *OAuth) requestToken(path string, form http.Values) (err os.Error) {
 	r, err := http.PostForm(oauth.BaseURL+path, form)
 	if err != nil {
 		return
@@ -88,23 +88,23 @@ func (oauth *OAuth) Login(baseURL string) (err os.Error) {
 		return nil // Ready to sign.
 	}
 
-	form := map[string]string{
-		"oauth_consumer_key":     oauth.consumer(),
-		"oauth_signature_method": "PLAINTEXT",
-		"oauth_signature":        "&",
+	form := http.Values{
+		"oauth_consumer_key":     []string{oauth.consumer()},
+		"oauth_signature_method": []string{"PLAINTEXT"},
+		"oauth_signature":        []string{"&"},
 	}
 	err = oauth.requestToken("/+request-token", form)
 	if err != nil {
 		return err
 	}
 
-	authQuery := map[string][]string{}
+	authQuery := http.Values{}
 	authQuery["oauth_token"] = []string{oauth.Token}
 	if oauth.CallbackURL != "" {
 		authQuery["oauth_callback"] = []string{oauth.CallbackURL}
 	}
 
-	oauth.AuthURL = oauth.BaseURL + "/+authorize-token?" + http.EncodeQuery(authQuery)
+	oauth.AuthURL = oauth.BaseURL + "/+authorize-token?" + authQuery.Encode()
 
 	if oauth.Callback != nil {
 		err = oauth.Callback(oauth)
@@ -113,8 +113,8 @@ func (oauth *OAuth) Login(baseURL string) (err os.Error) {
 		}
 	}
 
-	form["oauth_token"] = oauth.Token
-	form["oauth_signature"] = "&" + oauth.TokenSecret
+	form["oauth_token"] = []string{oauth.Token}
+	form["oauth_signature"] = []string{"&" + oauth.TokenSecret}
 
 	err = oauth.requestToken("/+access-token", form)
 	if err != nil {

@@ -71,11 +71,11 @@ func (s *TestHTTPServer) Start() {
 	url, _ := http.ParseURL(s.URL)
 	go http.ListenAndServe(url.Host, s)
 
-	s.PrepareResponse(123, nil, "")
+	s.PrepareResponse(203, nil, "")
 	for {
 		// Wait for it to be up.
-		resp, _, err := http.Get(s.URL)
-		if err == nil && resp.StatusCode == 123 {
+		resp, err := http.Get(s.URL)
+		if err == nil && resp.StatusCode == 203 {
 			break
 		}
 		fmt.Fprintf(os.Stderr, "\nWaiting for fake server to be up... ")

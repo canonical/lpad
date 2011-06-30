@@ -15,21 +15,26 @@ func check(err os.Error) {
 func main() {
 	root, err := lpad.Login(lpad.Production, &lpad.ConsoleOAuth{})
 	check(err)
-
-	list, err := root.FindTeams("ensemble")
+	me, err := root.Me()
 	check(err)
+	fmt.Println(me.DisplayName())
 
-	fmt.Printf("Found %d members.\n", list.TotalSize())
-
-	i := 0
-	err = list.For(func(t lpad.Team) os.Error {
-		fmt.Printf("%s\n", t.DisplayName())
-		i++
-		return nil
-	})
-	check(err)
-
-	fmt.Printf("Had %d results, iterated over %d.\n", list.TotalSize(), i)
+	//check(err)
+//
+//	list, err := root.FindTeams("ensemble")
+//	check(err)
+//
+//	fmt.Printf("Found %d members.\n", list.TotalSize())
+//
+//	i := 0
+//	err = list.For(func(t lpad.Team) os.Error {
+//		fmt.Printf("%s\n", t.DisplayName())
+//		i++
+//		return nil
+//	})
+//	check(err)
+//
+//	fmt.Printf("Had %d results, iterated over %d.\n", list.TotalSize(), i)
 
 	//me, err := root.Me()
 	//check(err)

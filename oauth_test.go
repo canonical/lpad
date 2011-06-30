@@ -148,7 +148,7 @@ func (s *OAuthS) TestSign(c *C) {
 	c.Assert(err, IsNil)
 
 	auth := req.Header.Get("Authorization")
-	parts := strings.Split(auth, ", ", -1)
+	parts := strings.Split(auth, ", ")
 	c.Assert(parts[0], Equals, `OAuth realm="https://api.launchpad.net/"`)
 	c.Assert(parts[1], Equals, `oauth_consumer_key="https%3A%2F%2Flaunchpad.net%2Flpad"`)
 	c.Assert(parts[2], Equals, `oauth_token="my+token"`)

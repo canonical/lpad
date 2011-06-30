@@ -161,7 +161,7 @@ func (s *ResS) TestGetRedirectWithoutLocation(c *C) {
 	testServer.PrepareResponse(303, headers, `{"ok": true}`)
 	r := lpad.NewResource(nil, "", testServer.URL + "/myresource", nil)
 	err := r.Get(nil)
-	c.Assert(err, Matches, "Got redirection status 303 without a Location")
+	c.Assert(err, Matches, "Get : 303 response missing Location header")
 }
 
 func (s *ResS) TestPost(c *C) {
@@ -454,7 +454,7 @@ func (s *ResS) TestCollectionIterError(c *C) {
 	i := 0
 	err = r.For(func(r lpad.Resource) os.Error {
 		i++
-		return os.ErrorString("Stop!")
+		return os.NewError("Stop!")
 	})
 	c.Assert(err, Matches, "Stop!")
 	c.Assert(i, Equals, 1)

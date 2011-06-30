@@ -228,7 +228,7 @@ func (r *resource) Location(url string) Resource {
 func (r *resource) Link(key string) (linkr Resource, err os.Error) {
 	location, ok := r.m[key].(string)
 	if !ok {
-		return nil, os.ErrorString(fmt.Sprintf("Field %q not found in resource", key))
+		return nil, os.NewError(fmt.Sprintf("Field %q not found in resource", key))
 	}
 	return r.Location(location), nil
 }
@@ -284,7 +284,7 @@ func (r *resource) For(f func(Resource) os.Error) os.Error {
 	for {
 		entries, ok := r.Map()["entries"].([]interface{})
 		if !ok {
-			return os.ErrorString("No entries found in resource")
+			return os.NewError("No entries found in resource")
 		}
 		for _, entry := range entries {
 			m, ok := entry.(map[string]interface{})
@@ -310,9 +310,15 @@ func (r *resource) For(f func(Resource) os.Error) os.Error {
 	return nil
 }
 
+var stopRedir = os.NewError("Stop redirection marker.")
+
+var httpClient = http.Client{
+	CheckRedirect: func(req *http.Request, via []*http.Request) os.Error { return stopRedir },
+}
+
 func (r *resource) do(method string, params Params, body []byte) (res *resource, err os.Error) {
 	res = r
-	query := http.EncodeQuery(multimap(params))
+	query := multimap(params).Encode()
 	for redirect := 0; ; redirect++ {
 		req, err := http.NewRequest(method, res.url, nil)
 		req.Header["Accept"] = []string{"application/json"}
@@ -346,8 +352,10 @@ func (r *resource) do(method string, params Params, body []byte) (res *resource,
 			}
 		}
 
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
+		resp, err := httpClient.Do(req)
+		if urlerr, ok := err.(*http.URLError); ok && urlerr.Error == stopRedir {
+			// fine
+		} else if err != nil {
 			return nil, err
 		}
 		//dump, err := http.DumpResponse(resp, true)
@@ -406,8 +414,8 @@ func shouldRedirect(statusCode int) bool {
 	return false
 }
 
-func multimap(params map[string]string) map[string][]string {
-	m := make(map[string][]string, len(params))
+func multimap(params map[string]string) http.Values {
+	m := make(http.Values, len(params))
 	for k, v := range params {
 		m[k] = []string{v}
 	}
