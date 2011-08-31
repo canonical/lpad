@@ -2,6 +2,7 @@ package lpad
 
 import (
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -13,6 +14,12 @@ type BugStub struct {
 	Private         bool
 	SecurityRelated bool
 	Tags            []string
+}
+
+// CreateBug creates a new bug with an appropriate bug task and returns it.
+func (root Root) Bug(id int) (bug Bug, err os.Error) {
+	r, err := root.GetLocation("/bugs/" + strconv.Itoa(id))
+	return Bug{r}, err
 }
 
 // CreateBug creates a new bug with an appropriate bug task and returns it.

@@ -33,6 +33,26 @@ func (s *ModelS) TestBug(c *C) {
 	c.Assert(bug.SecurityRelated(), Equals, false)
 }
 
+func (s *ModelS) TestRootBug(c *C) {
+	data := `{
+		"id": 123456,
+		"title": "Title",
+		"description": "Description",
+		"private": true,
+		"security_related": true,
+		"tags": "a b c"
+	}`
+	testServer.PrepareResponse(200, jsonType, data)
+	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+	bug, err := root.Bug(123456)
+	c.Assert(err, IsNil)
+	c.Assert(bug.Title(), Equals, "Title")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/bugs/123456")
+}
+
 func (s *ModelS) TestRootCreateBug(c *C) {
 	data := `{
 		"id": 123456,
