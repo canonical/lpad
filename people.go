@@ -2,6 +2,7 @@ package lpad
 
 import (
 	"os"
+	"url"
 )
 
 // The Root type provides the entrance for the Launchpad API.
@@ -13,6 +14,24 @@ type Root struct {
 func (root Root) Me() (p Person, err os.Error) {
 	me, err := root.GetLocation("/people/+me")
 	return Person{me}, err
+}
+
+// Person returns the Person with the provided username.
+func (root Root) Person(username string) (p Person, err os.Error) {
+	r, err := root.GetLocation("/people/~" + url.QueryEscape(username))
+	if err == nil && r.BoolField("is_team") {
+		err = os.NewError(username + " is a team, not a person")
+	}
+	return Person{r}, err
+}
+
+// Team returns the Team with the provided name.
+func (root Root) Team(name string) (p Person, err os.Error) {
+	r, err := root.GetLocation("/people/~" + url.QueryEscape(name))
+	if err == nil && !r.BoolField("is_team") {
+		err = os.NewError(name + " is not a team")
+	}
+	return Person{r}, err
 }
 
 // FindPeople returns a PersonList containing all Person accounts whose

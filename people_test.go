@@ -19,6 +19,32 @@ func (s *ModelS) TestRootMe(c *C) {
 	c.Assert(req.URL.Path, Equals, "/people/+me")
 }
 
+func (s *ModelS) TestRootPerson(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{"display_name": "Joe"}`)
+
+	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+
+	person, err := root.Person("joe")
+	c.Assert(err, IsNil)
+	c.Assert(person.DisplayName(), Equals, "Joe")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.URL.Path, Equals, "/people/~joe")
+}
+
+func (s *ModelS) TestRootTeam(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{"display_name": "Ensemble", "is_team": true}`)
+
+	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+
+	team, err := root.Team("ensemble")
+	c.Assert(err, IsNil)
+	c.Assert(team.DisplayName(), Equals, "Ensemble")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.URL.Path, Equals, "/people/~ensemble")
+}
+
 func (s *ModelS) TestRootFindMembers(c *C) {
 	data := `{
 		"total_size": 2,
