@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"url"
 )
 
 // The OAuth type enables authenticated sessions to be established with
@@ -37,7 +38,7 @@ func (oauth *OAuth) consumer() string {
 	return oauth.Consumer
 }
 
-func (oauth *OAuth) requestToken(path string, form http.Values) (err os.Error) {
+func (oauth *OAuth) requestToken(path string, form url.Values) (err os.Error) {
 	r, err := http.PostForm(oauth.BaseURL+path, form)
 	if err != nil {
 		return
@@ -47,7 +48,7 @@ func (oauth *OAuth) requestToken(path string, form http.Values) (err os.Error) {
 	if err != nil {
 		return
 	}
-	query, err := http.ParseQuery(string(data))
+	query, err := url.ParseQuery(string(data))
 	if err != nil {
 		return
 	}
@@ -69,7 +70,7 @@ func (oauth *OAuth) requestToken(path string, form http.Values) (err os.Error) {
 
 func (oauth *OAuth) Login(baseURL string) (err os.Error) {
 	if oauth.BaseURL == "" {
-		url, err := http.ParseURL(baseURL)
+		url, err := url.Parse(baseURL)
 		if err != nil {
 			return err
 		}
@@ -88,7 +89,7 @@ func (oauth *OAuth) Login(baseURL string) (err os.Error) {
 		return nil // Ready to sign.
 	}
 
-	form := http.Values{
+	form := url.Values{
 		"oauth_consumer_key":     []string{oauth.consumer()},
 		"oauth_signature_method": []string{"PLAINTEXT"},
 		"oauth_signature":        []string{"&"},
@@ -98,7 +99,7 @@ func (oauth *OAuth) Login(baseURL string) (err os.Error) {
 		return err
 	}
 
-	authQuery := http.Values{}
+	authQuery := url.Values{}
 	authQuery["oauth_token"] = []string{oauth.Token}
 	if oauth.CallbackURL != "" {
 		authQuery["oauth_callback"] = []string{oauth.CallbackURL}
@@ -134,10 +135,10 @@ func (oauth *OAuth) Sign(req *http.Request) os.Error {
 	}
 
 	auth := `OAuth realm="https://api.launchpad.net/", ` +
-		`oauth_consumer_key="` + http.URLEscape(oauth.consumer()) + `", ` +
-		`oauth_token="` + http.URLEscape(oauth.Token) + `", ` +
+		`oauth_consumer_key="` + url.QueryEscape(oauth.consumer()) + `", ` +
+		`oauth_token="` + url.QueryEscape(oauth.Token) + `", ` +
 		`oauth_signature_method="PLAINTEXT", ` +
-		`oauth_signature="` + http.URLEscape(`&`+oauth.TokenSecret) + `", ` +
+		`oauth_signature="` + url.QueryEscape(`&`+oauth.TokenSecret) + `", ` +
 		`oauth_timestamp="` + strconv.Itoa64(time.Nanoseconds()/1e9) + `", ` +
 		`oauth_nonce="` + strconv.Itoa(int(rand.Int31())) + `", ` +
 		`oauth_version="1.0"`

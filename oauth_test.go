@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"url"
 )
 
 var _ = Suite(&OAuthS{})
@@ -18,7 +19,7 @@ type OAuthS struct {
 	HTTPSuite
 }
 
-type OAuthI struct{
+type OAuthI struct {
 	SuiteI
 }
 
@@ -36,7 +37,7 @@ func (s *OAuthS) TestRequestToken(c *C) {
 
 	err := oauth.Login(testServer.URL)
 	c.Assert(err, Matches, "STOP!")
-	c.Assert(gotAuthURL, Equals, testServer.URL + "/+authorize-token?oauth_token=mytoken")
+	c.Assert(gotAuthURL, Equals, testServer.URL+"/+authorize-token?oauth_token=mytoken")
 	c.Assert(oauth.BaseURL, Equals, testServer.URL)
 
 	req := testServer.WaitRequest()
@@ -63,14 +64,14 @@ func (s *OAuthS) TestBaseURLStripping(c *C) {
 
 	testServer.PrepareResponse(200, nil, "oauth_token=mytoken&oauth_token_secret=mysecret")
 
-	url, err := http.ParseURL(testServer.URL)
+	url_, err := url.Parse(testServer.URL)
 	c.Assert(err, IsNil)
 
-	url.Host = "api." + url.Host
-	url.Path = "/1.0/"
+	url_.Host = "api." + url_.Host
+	url_.Path = "/1.0/"
 
-	c.Assert(url.String(), Matches, `http://api\..*/1\.0/`)
-	err = oauth.Login(url.String())
+	c.Assert(url_.String(), Matches, `http://api\..*/1\.0/`)
+	err = oauth.Login(url_.String())
 
 	c.Assert(err, Matches, "STOP!")
 	c.Assert(oauth.BaseURL, Equals, testServer.URL)
@@ -102,14 +103,14 @@ func (s *OAuthS) TestCallbackURL(c *C) {
 	}
 	oauth := lpad.OAuth{
 		CallbackURL: "http://example.com",
-		Callback: callback,
+		Callback:    callback,
 	}
 
 	testServer.PrepareResponse(200, nil, "oauth_token=mytoken&oauth_token_secret=mysecret")
 
 	err := oauth.Login(testServer.URL)
 	c.Assert(err, Matches, "STOP!")
-	c.Assert(gotAuthURL, Equals, testServer.URL + "/+authorize-token?oauth_token=mytoken&oauth_callback=http%3A%2F%2Fexample.com")
+	c.Assert(gotAuthURL, Equals, testServer.URL+"/+authorize-token?oauth_token=mytoken&oauth_callback=http%3A%2F%2Fexample.com")
 }
 
 func (s *OAuthS) TestAccessToken(c *C) {
@@ -134,10 +135,9 @@ func (s *OAuthS) TestAccessToken(c *C) {
 	c.Assert(oauth.AuthURL, Equals, "")
 }
 
-
 func (s *OAuthS) TestSign(c *C) {
 	oauth := lpad.OAuth{
-		Token: "my token",
+		Token:       "my token",
 		TokenSecret: "my secret",
 	}
 
@@ -161,9 +161,9 @@ func (s *OAuthS) TestSign(c *C) {
 
 func (s *OAuthS) TestSignWithConsumer(c *C) {
 	oauth := lpad.OAuth{
-		Token: "my token",
+		Token:       "my token",
 		TokenSecret: "my secret",
-		Consumer: "my consumer",
+		Consumer:    "my consumer",
 	}
 
 	req, err := http.NewRequest("GET", "http://example.com/path", nil)
@@ -189,9 +189,9 @@ func (s *OAuthS) TestDontLoginWithExistingSecret(c *C) {
 		return os.NewError("STOP!")
 	}
 	oauth := lpad.OAuth{
-		Token: "initialtoken",
+		Token:       "initialtoken",
 		TokenSecret: "initialsecret",
-		Callback: callback,
+		Callback:    callback,
 	}
 
 	err := oauth.Login(testServer.URL)
@@ -262,4 +262,3 @@ func (s *OAuthS) TestStoredOAuthSignForwards(c *C) {
 	err := (&lpad.StoredOAuth{}).Sign(nil)
 	c.Assert(err, Matches, `OAuth can't Sign without a token \(missing Login\?\)`)
 }
-

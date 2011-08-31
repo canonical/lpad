@@ -10,6 +10,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"url"
 )
 
 // The Params type is a helper to pass parameter into the Resource request
@@ -75,11 +76,11 @@ type Resource interface {
 	// full URL, or an absolute path (based on the resource's BaseURL),
 	// or a path relative to the resource itself (based on the
 	// resource's URL).
-	Location(url string) Resource
+	Location(url_ string) Resource
 
 	// GetLocation builds a resource with Location and calls Get(nil)
 	// on it.  It returns the loaded resource in case of success.
-	GetLocation(url string) (r Resource, err os.Error)
+	GetLocation(url_ string) (r Resource, err os.Error)
 
 	// Link calls Location with a URL available in the given key
 	// of the current resource's Map.  It returns an error if the
@@ -131,8 +132,8 @@ type resource struct {
 // the Launchpad API which is not covered by the static model yet, see the
 // Link and Location methods on the Resource interface for more convenient
 // ways to create resources.
-func NewResource(session *Session, baseurl, url string, m map[string]interface{}) Resource {
-	return &resource{session, baseurl, url, m, nil}
+func NewResource(session *Session, baseurl, url_ string, m map[string]interface{}) Resource {
+	return &resource{session, baseurl, url_, m, nil}
 }
 
 func (r *resource) Session() *Session {
@@ -213,16 +214,16 @@ func (r *resource) join(part string) string {
 		// Relative to URL.
 		base = r.url
 	}
-	url, err := http.ParseURL(base)
+	url_, err := url.Parse(base)
 	if err != nil {
 		panic("Invalid URL: " + base)
 	}
-	url.Path = path.Join(url.Path, part)
-	return url.String()
+	url_.Path = path.Join(url_.Path, part)
+	return url_.String()
 }
 
-func (r *resource) Location(url string) Resource {
-	return &resource{session: r.session, baseurl: r.baseurl, url: r.join(url)}
+func (r *resource) Location(url_ string) Resource {
+	return &resource{session: r.session, baseurl: r.baseurl, url: r.join(url_)}
 }
 
 func (r *resource) Link(key string) (linkr Resource, err os.Error) {
@@ -233,8 +234,8 @@ func (r *resource) Link(key string) (linkr Resource, err os.Error) {
 	return r.Location(location), nil
 }
 
-func (r *resource) GetLocation(url string) (linkr Resource, err os.Error) {
-	linkr = r.Location(url)
+func (r *resource) GetLocation(url_ string) (linkr Resource, err os.Error) {
+	linkr = r.Location(url_)
 	err = linkr.Get(nil)
 	if err != nil {
 		return nil, err
@@ -291,8 +292,8 @@ func (r *resource) For(f func(Resource) os.Error) os.Error {
 			if !ok {
 				continue
 			}
-			url, _ := m["self_link"].(string)
-			err := f(&resource{session: r.session, baseurl: r.baseurl, url: url, m: m})
+			url_, _ := m["self_link"].(string)
+			err := f(&resource{session: r.session, baseurl: r.baseurl, url: url_, m: m})
 			if err != nil {
 				return err
 			}
@@ -353,7 +354,7 @@ func (r *resource) do(method string, params Params, body []byte) (res *resource,
 		}
 
 		resp, err := httpClient.Do(req)
-		if urlerr, ok := err.(*http.URLError); ok && urlerr.Error == stopRedir {
+		if urlerr, ok := err.(*url.Error); ok && urlerr.Error == stopRedir {
 			// fine
 		} else if err != nil {
 			return nil, err
@@ -414,8 +415,8 @@ func shouldRedirect(statusCode int) bool {
 	return false
 }
 
-func multimap(params map[string]string) http.Values {
-	m := make(http.Values, len(params))
+func multimap(params map[string]string) url.Values {
+	m := make(url.Values, len(params))
 	for k, v := range params {
 		m[k] = []string{v}
 	}

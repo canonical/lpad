@@ -10,6 +10,7 @@ import (
 	"os"
 	"testing"
 	"time"
+	"url"
 )
 
 func Test(t *testing.T) {
@@ -29,7 +30,6 @@ func (s *SuiteI) SetUpSuite(c *C) {
 type HTTPSuite struct{}
 
 var testServer = NewTestHTTPServer("http://localhost:4444", 5e9)
-
 
 func (s *HTTPSuite) SetUpSuite(c *C) {
 	testServer.Start()
@@ -54,8 +54,8 @@ type testResponse struct {
 	Body    string
 }
 
-func NewTestHTTPServer(url string, timeout int64) *TestHTTPServer {
-	return &TestHTTPServer{URL: url, Timeout: timeout}
+func NewTestHTTPServer(url_ string, timeout int64) *TestHTTPServer {
+	return &TestHTTPServer{URL: url_, Timeout: timeout}
 }
 
 func (s *TestHTTPServer) Start() {
@@ -68,8 +68,8 @@ func (s *TestHTTPServer) Start() {
 	s.response = make(chan *testResponse, 64)
 	s.pending = make(chan bool, 64)
 
-	url, _ := http.ParseURL(s.URL)
-	go http.ListenAndServe(url.Host, s)
+	url_, _ := url.Parse(s.URL)
+	go http.ListenAndServe(url_.Host, s)
 
 	s.PrepareResponse(203, nil, "")
 	for {
