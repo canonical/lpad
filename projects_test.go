@@ -3,6 +3,7 @@ package lpad_test
 import (
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
+	"os"
 )
 
 func (s *ModelS) TestProject(c *C) {
@@ -31,6 +32,41 @@ func (s *ModelS) TestProject(c *C) {
 	c.Assert(project.Description(), Equals, "New description")
 }
 
+func (s *ModelS) TestMilestone(c *C) {
+	m := M{
+		"name": "thename",
+		"code_name": "thecodename",
+		"title": "Title",
+		"summary": "Summary",
+		"date_targeted": "2011-08-31",
+		"is_active": true,
+		"web_link": "http://page",
+	}
+
+	ms := lpad.Milestone{lpad.NewResource(nil, "", "", m)}
+	c.Assert(ms.Name(), Equals, "thename")
+	c.Assert(ms.CodeName(), Equals, "thecodename")
+	c.Assert(ms.Title(), Equals, "Title")
+	c.Assert(ms.Summary(), Equals, "Summary")
+	c.Assert(ms.Date(), Equals, "2011-08-31")
+	c.Assert(ms.Active(), Equals, true)
+	c.Assert(ms.WebPage(), Equals, "http://page")
+	ms.SetName("newname")
+	ms.SetCodeName("newcodename")
+	ms.SetTitle("New Title")
+	ms.SetSummary("New summary")
+	ms.SetDate("2011-09-01")
+	ms.SetActive(false)
+	ms.SetWebPage("http://other")
+	c.Assert(ms.Name(), Equals, "newname")
+	c.Assert(ms.CodeName(), Equals, "newcodename")
+	c.Assert(ms.Title(), Equals, "New Title")
+	c.Assert(ms.Summary(), Equals, "New summary")
+	c.Assert(ms.Date(), Equals, "2011-09-01")
+	c.Assert(ms.Active(), Equals, false)
+	c.Assert(ms.WebPage(), Equals, "http://other")
+}
+
 func (s *ModelS) TestRootProject(c *C) {
 	data := `{
 		"name": "Name",
@@ -48,3 +84,35 @@ func (s *ModelS) TestRootProject(c *C) {
 	c.Assert(req.URL.Path, Equals, "/myproj")
 }
 
+func (s *ModelS) TestProjectActiveMilestones(c *C) {
+	data := `{
+		"total_size": 2,
+		"start": 0,
+		"entries": [{
+			"self_link": "http://self0",
+			"name": "Name0"
+		}, {
+			"self_link": "http://self1",
+			"name": "Name1"
+		}]
+	}`
+	testServer.PrepareResponse(200, jsonType, data)
+	m := M{
+		"active_milestones_collection_link": testServer.URL + "/col_link",
+	}
+	project := lpad.Project{lpad.NewResource(nil, testServer.URL, "", m)}
+	list, err := project.ActiveMilestones()
+	c.Assert(err, IsNil)
+	c.Assert(list.TotalSize(), Equals, 2)
+
+	names := []string{}
+	list.For(func(ms lpad.Milestone) os.Error {
+		names = append(names, ms.Name())
+		return nil
+	})
+	c.Assert(names, Equals, []string{"Name0", "Name1"})
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/col_link")
+}

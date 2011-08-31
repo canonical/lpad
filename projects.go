@@ -84,3 +84,102 @@ func (p Project) SetSummary(title string) {
 func (p Project) SetDescription(description string) {
 	p.SetField("description", description)
 }
+
+// ActiveMilestones returns the list of active milestones associated with
+// the project, ordered by the target date.
+func (p Project) ActiveMilestones() (milestones MilestoneList, err os.Error) {
+	r, err := p.GetLink("active_milestones_collection_link")
+	return MilestoneList{r}, err
+}
+
+// The Milestone type represents a milestone associated with a project.
+type Milestone struct {
+	Resource
+}
+
+// Name returns the milestone name, which consists of only
+// letters, numbers, and simple punctuation.
+func (ms Milestone) Name() string {
+	return ms.StringField("name")
+}
+
+// CodeName returns the alternative name for the milestone, if any.
+func (ms Milestone) CodeName() string {
+	return ms.StringField("code_name")
+}
+
+// Title returns the milestone context title for pages.
+func (ms Milestone) Title() string {
+	return ms.StringField("title")
+}
+
+// Summary returns the summary of features and status of this milestone.
+func (ms Milestone) Summary() string {
+	return ms.StringField("summary")
+}
+
+// WebPage returns the web page link associated with this milestone.
+func (ms Milestone) WebPage() string {
+	return ms.StringField("web_link")
+}
+
+// Active returns true if the milestone is still active.
+func (ms Milestone) Active() bool {
+	return ms.BoolField("is_active")
+}
+
+// Date returns the target date for the milestone.
+func (ms Milestone) Date() string {
+	return ms.StringField("date_targeted")
+}
+
+// SetName changes the milestone name, which must consists of
+// only letters, numbers, and simple punctuation.
+func (ms Milestone) SetName(name string) {
+	ms.SetField("name", name)
+}
+
+// SetCodeName sets the alternative name for the milestone.
+func (ms Milestone) SetCodeName(name string) {
+	ms.SetField("code_name", name)
+}
+
+// SetTitle changes the milestone's context title for pages.
+func (ms Milestone) SetTitle(title string) {
+	ms.SetField("title", title)
+}
+
+// SetSummary sets the summary of features and status of this milestone.
+func (ms Milestone) SetSummary(summary string) {
+	ms.SetField("summary", summary)
+}
+
+// SetWebPage sets the web page link associated with this milestone.
+func (ms Milestone) SetWebPage(link string) {
+	ms.SetField("web_link", link)
+}
+
+// SetActive sets whether the milestone is still active or not.
+func (ms Milestone) SetActive(active bool) {
+	ms.SetField("is_active", active)
+}
+
+// SetDate changes the target date for the milestone.
+func (ms Milestone) SetDate(date string) {
+	ms.SetField("date_targeted", date)
+}
+
+// The MilestoneList represents a list of project milestones.
+type MilestoneList struct {
+	Resource
+}
+
+// For iterates over the list of milestones and calls f for each one.
+// If f returns a non-nil error, iteration will stop and the error will
+// be returned as the result of For.
+func (list MilestoneList) For(f func(t Milestone) os.Error) os.Error {
+	return list.Resource.For(func(r Resource) os.Error {
+		f(Milestone{r})
+		return nil
+	})
+}
