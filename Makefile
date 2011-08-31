@@ -6,7 +6,8 @@ GOFILES=\
 	oauth.go\
 	resource.go\
 	session.go\
-	model.go\
+	people.go\
+	bugs.go\
 
 
 include $(GOROOT)/src/Make.pkg

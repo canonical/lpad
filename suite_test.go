@@ -23,7 +23,7 @@ type SuiteI struct{}
 
 func (s *SuiteI) SetUpSuite(c *C) {
 	if !*integration {
-		c.Skip("Integration tests not enabled (-int flag)")
+		c.Skip("Integration tests not enabled (-i flag)")
 	}
 }
 
