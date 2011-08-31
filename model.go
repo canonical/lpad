@@ -2,6 +2,7 @@ package lpad
 
 import (
 	"os"
+	"strings"
 )
 
 // The Root type provides the entrance for the Launchpad API.
@@ -13,6 +14,35 @@ type Root struct {
 func (root Root) Me() (p Person, err os.Error) {
 	me, err := root.GetLocation("/people/+me")
 	return Person{me}, err
+}
+
+// A BugStub holds details necessary for creating a new bug in Launchpad.
+type BugStub struct {
+	Title           string   // Required
+	Description     string   // Required
+	Target          Resource // Project, source package, or distribution
+	Private         bool
+	SecurityRelated bool
+	Tags            []string
+}
+
+// CreateBug creates a new bug with an appropriate bug task and returns it.
+func (root Root) CreateBug(stub *BugStub) (bug Bug, err os.Error) {
+	params := Params{
+		"ws.op": "createBug",
+		"title": stub.Title,
+		"description": stub.Description,
+		"target": stub.Target.URL(),
+		"tags": strings.Join(stub.Tags, " "),
+	}
+	if stub.Private {
+		params["private"] = "true"
+	}
+	if stub.SecurityRelated {
+		params["security_related"] = "true"
+	}
+	r, err := root.Location("/bugs").Post(params)
+	return Bug{r}, err
 }
 
 // FindPeople returns a PersonList containing all Person accounts whose
@@ -89,8 +119,7 @@ func (list TeamList) For(f func(t Team) os.Error) os.Error {
 	})
 }
 
-
-// The Person type encapsulates access to details about a person in Launchpad.
+// The Person type represents a person in Launchpad.
 type Person struct {
 	Resource
 }
@@ -176,4 +205,71 @@ func (team Team) DisplayName() string {
 // throughout Launchpad.  Patch must be called to commit all changes.
 func (team Team) SetDisplayName(name string) {
 	team.SetField("display_name", name)
+}
+
+// The Bug type represents a bug in Launchpad.
+type Bug struct {
+	Resource
+}
+
+// Id returns the bug numeric identifier (the bug # itself).
+func (bug Bug) Id() int {
+	return bug.IntField("id")
+}
+
+// Title returns the short bug summary.
+func (bug Bug) Title() string {
+	return bug.StringField("title")
+}
+
+// Description returns the main bug description.
+func (bug Bug) Description() string {
+	return bug.StringField("description")
+}
+
+// Tags returns the set of tags associated with the bug.
+func (bug Bug) Tags() []string {
+	return strings.Split(bug.StringField("tags"), " ")
+}
+
+// Private returns true if the bug is flagged as private.
+func (bug Bug) Private() bool {
+	return bug.BoolField("private")
+}
+
+// SecurityRelated returns true if the bug describes sensitive
+// information about a security vulnerability.
+func (bug Bug) SecurityRelated() bool {
+	return bug.BoolField("security_related")
+}
+
+// SetTitle changes the bug title.
+// Patch must be called to commit all changes.
+func (bug Bug) SetTitle(title string) {
+	bug.SetField("title", title)
+}
+
+// SetDescription changes the bug description.
+// Patch must be called to commit all changes.
+func (bug Bug) SetDescription(description string) {
+	bug.SetField("description", description)
+}
+
+// SetTags changes the bug tags.
+// Patch must be called to commit all changes.
+func (bug Bug) SetTags(tags []string) {
+	bug.SetField("tags", strings.Join(tags, " "))
+}
+
+// SetPrivate changes the bug private flag.
+// Patch must be called to commit all changes.
+func (bug Bug) SetPrivate(private bool) {
+	bug.SetField("private", private)
+}
+
+// SetSecurityRelated sets to related the flag that tells if
+// a bug is security sensitive or not.
+// Patch must be called to commit all changes.
+func (bug Bug) SetSecurityRelated(related bool) {
+	bug.SetField("security_related", related)
 }

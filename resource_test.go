@@ -247,9 +247,11 @@ func (s *ResS) TestPatch(c *C) {
 
 	r.SetField("a", 3)
 	r.SetField("c", "string")
+	r.SetField("d", true)
 	c.Assert(r.Map()["a"], Equals, 3.0)
 	c.Assert(r.Map()["b"], Equals, 2.0)
 	c.Assert(r.Map()["c"], Equals, "string")
+	c.Assert(r.Map()["d"], Equals, true)
 
 	err = r.Patch()
 	c.Assert(err, IsNil)
@@ -267,7 +269,7 @@ func (s *ResS) TestPatch(c *C) {
 	var m M
 	err = json.Unmarshal([]byte(body(req2)), &m)
 	c.Assert(err, IsNil)
-	c.Assert(m, Equals, M{"a": 3.0, "c": "string"})
+	c.Assert(m, Equals, M{"a": 3.0, "c": "string", "d": true})
 }
 
 func (s *ResS) TestPatchWithContent(c *C) {

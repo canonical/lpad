@@ -19,6 +19,9 @@ func main() {
 	check(err)
 	fmt.Println(me.DisplayName())
 
+	r, err := root.GetLocation("/bugs/123456")
+	fmt.Printf("%#v\n", r.Map())
+
 	//check(err)
 //
 //	list, err := root.FindTeams("ensemble")

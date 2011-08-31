@@ -195,6 +195,8 @@ func (r *resource) SetField(key string, value interface{}) {
 		newv = float64(v)
 	case string:
 		newv = v
+	case bool:
+		newv = v
 	default:
 		panic(fmt.Sprintf("Unsupported value type for SetField: %#v", value))
 	}
