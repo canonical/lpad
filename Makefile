@@ -7,6 +7,7 @@ GOFILES=\
 	resource.go\
 	session.go\
 	people.go\
+	projects.go\
 	bugs.go\
 
 
