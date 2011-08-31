@@ -87,3 +87,45 @@ func (s *ModelS) TestRootCreateBug(c *C) {
 	c.Assert(req.Form["tags"], Equals, []string{"a b c"})
 	c.Assert(req.Form["target"], Equals, []string{"http://target"})
 }
+
+func (s *ModelS) TestRootCreateBugNoTags(c *C) {
+	// Launchpad blows up if an empty tags value is provided. :-(
+	data := `{
+		"id": 123456,
+		"title": "Title"
+	}`
+	testServer.PrepareResponse(200, jsonType, data)
+	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+	stub := lpad.BugStub{
+		Title: "Title",
+		Description: "Description.",
+		Target: lpad.NewResource(nil, "", "http://target", nil),
+	}
+	bug, err := root.CreateBug(&stub)
+	c.Assert(err, IsNil)
+	c.Assert(bug.Title(), Equals, "Title")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "POST")
+	c.Assert(req.URL.Path, Equals, "/bugs")
+	c.Assert(req.Form["ws.op"], Equals, []string{"createBug"})
+
+	_, ok := req.Form["tags"]
+	c.Assert(ok, Equals, false)
+}
+
+
+func (s *ModelS) TestBugLinkBranch(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{}`)
+	bug := lpad.Bug{lpad.NewResource(nil, "", testServer.URL + "/bugs/123456", nil)}
+	branch := lpad.Branch{lpad.NewResource(nil, testServer.URL, testServer.URL + "~joe/ensemble/some-branch", nil)}
+
+	err := bug.LinkBranch(branch)
+	c.Assert(err, IsNil)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "POST")
+	c.Assert(req.URL.Path, Equals, "/bugs/123456")
+	c.Assert(req.Form["ws.op"], Equals, []string{"linkBranch"})
+	c.Assert(req.Form["branch"], Equals, []string{branch.URL()})
+}

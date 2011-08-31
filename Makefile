@@ -8,6 +8,7 @@ GOFILES=\
 	session.go\
 	people.go\
 	projects.go\
+	branches.go\
 	bugs.go\
 
 

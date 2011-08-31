@@ -29,7 +29,9 @@ func (root Root) CreateBug(stub *BugStub) (bug Bug, err os.Error) {
 		"title": stub.Title,
 		"description": stub.Description,
 		"target": stub.Target.URL(),
-		"tags": strings.Join(stub.Tags, " "),
+	}
+	if len(stub.Tags) > 0 {
+		params["tags"] = strings.Join(stub.Tags, " ")
 	}
 	if stub.Private {
 		params["private"] = "true"
@@ -106,4 +108,14 @@ func (bug Bug) SetPrivate(private bool) {
 // Patch must be called to commit all changes.
 func (bug Bug) SetSecurityRelated(related bool) {
 	bug.SetField("security_related", related)
+}
+
+// LinkBranch associates a branch with this bug.
+func (bug Bug) LinkBranch(branch Branch) os.Error {
+	params := Params{
+		"ws.op": "linkBranch",
+		"branch": branch.URL(),
+	}
+	_, err := bug.Post(params)
+	return err
 }

@@ -37,9 +37,9 @@ func (s *ModelS) TestRootPerson(c *C) {
 	c.Assert(person.DisplayName(), Equals, "Joe")
 
 	req := testServer.WaitRequest()
-	c.Assert(req.URL.Path, Equals, "/people/~joe")
+	c.Assert(req.URL.Path, Equals, "/~joe")
 	req = testServer.WaitRequest()
-	c.Assert(req.URL.Path, Equals, "/people/~joe")
+	c.Assert(req.URL.Path, Equals, "/~joe")
 }
 
 func (s *ModelS) TestRootTeam(c *C) {
@@ -60,9 +60,9 @@ func (s *ModelS) TestRootTeam(c *C) {
 	c.Assert(team.DisplayName(), Equals, "Ensemble")
 
 	req := testServer.WaitRequest()
-	c.Assert(req.URL.Path, Equals, "/people/~ensemble")
+	c.Assert(req.URL.Path, Equals, "/~ensemble")
 	req = testServer.WaitRequest()
-	c.Assert(req.URL.Path, Equals, "/people/~ensemble")
+	c.Assert(req.URL.Path, Equals, "/~ensemble")
 }
 
 func (s *ModelS) TestRootFindMembers(c *C) {

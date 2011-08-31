@@ -11,7 +11,7 @@ func (root Root) Project(name string) (project Project, err os.Error) {
 	return Project{r}, err
 }
 
-// The Bug type represents a bug in Launchpad.
+// The Project type represents a project in Launchpad.
 type Project struct {
 	Resource
 }
