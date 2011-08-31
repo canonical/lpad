@@ -26,12 +26,24 @@ func (root Root) Person(username string) (p Person, err os.Error) {
 }
 
 // Team returns the Team with the provided name.
-func (root Root) Team(name string) (p Person, err os.Error) {
+func (root Root) Team(name string) (p Team, err os.Error) {
 	r, err := root.GetLocation("/people/~" + url.QueryEscape(name))
 	if err == nil && !r.BoolField("is_team") {
 		err = os.NewError(name + " is not a team")
 	}
-	return Person{r}, err
+	return Team{r}, err
+}
+
+// Member returns the Team or Person with the provided name or username.
+func (root Root) Member(name string) (p Resource, err os.Error) {
+	r, err := root.GetLocation("/people/~" + url.QueryEscape(name))
+	if err != nil {
+		return nil, err
+	}
+	if r.BoolField("is_team") {
+		return Team{r}, nil
+	}
+	return Person{r}, nil
 }
 
 // FindPeople returns a PersonList containing all Person accounts whose

@@ -20,7 +20,9 @@ func (s *ModelS) TestRootMe(c *C) {
 }
 
 func (s *ModelS) TestRootPerson(c *C) {
-	testServer.PrepareResponse(200, jsonType, `{"display_name": "Joe"}`)
+	data := `{"display_name": "Joe"}`
+	testServer.PrepareResponse(200, jsonType, data)
+	testServer.PrepareResponse(200, jsonType, data)
 
 	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
 
@@ -28,12 +30,22 @@ func (s *ModelS) TestRootPerson(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(person.DisplayName(), Equals, "Joe")
 
+	member, err := root.Member("joe")
+	c.Assert(err, IsNil)
+	person, ok := member.(lpad.Person)
+	c.Assert(ok, Equals, true)
+	c.Assert(person.DisplayName(), Equals, "Joe")
+
 	req := testServer.WaitRequest()
+	c.Assert(req.URL.Path, Equals, "/people/~joe")
+	req = testServer.WaitRequest()
 	c.Assert(req.URL.Path, Equals, "/people/~joe")
 }
 
 func (s *ModelS) TestRootTeam(c *C) {
-	testServer.PrepareResponse(200, jsonType, `{"display_name": "Ensemble", "is_team": true}`)
+	data := `{"display_name": "Ensemble", "is_team": true}`
+	testServer.PrepareResponse(200, jsonType, data)
+	testServer.PrepareResponse(200, jsonType, data)
 
 	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
 
@@ -41,7 +53,15 @@ func (s *ModelS) TestRootTeam(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(team.DisplayName(), Equals, "Ensemble")
 
+	member, err := root.Member("ensemble")
+	c.Assert(err, IsNil)
+	team, ok := member.(lpad.Team)
+	c.Assert(ok, Equals, true)
+	c.Assert(team.DisplayName(), Equals, "Ensemble")
+
 	req := testServer.WaitRequest()
+	c.Assert(req.URL.Path, Equals, "/people/~ensemble")
+	req = testServer.WaitRequest()
 	c.Assert(req.URL.Path, Equals, "/people/~ensemble")
 }
 
