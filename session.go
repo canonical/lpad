@@ -25,8 +25,8 @@ type Auth interface {
 	Sign(req *http.Request) (err os.Error)
 }
 
-const Production = "https://api.launchpad.net/1.0/"
-const Staging = "https://api.staging.launchpad.net/1.0/"
+const Production = "https://api.launchpad.net/devel/"
+const Staging = "https://api.staging.launchpad.net/devel/"
 
 
 // The Session type represents a session of communication with Launchpad,
