@@ -25,10 +25,10 @@ func (root Root) Bug(id int) (bug Bug, err os.Error) {
 // CreateBug creates a new bug with an appropriate bug task and returns it.
 func (root Root) CreateBug(stub *BugStub) (bug Bug, err os.Error) {
 	params := Params{
-		"ws.op": "createBug",
-		"title": stub.Title,
+		"ws.op":       "createBug",
+		"title":       stub.Title,
 		"description": stub.Description,
-		"target": stub.Target.URL(),
+		"target":      stub.Target.URL(),
 	}
 	if len(stub.Tags) > 0 {
 		params["tags"] = strings.Join(stub.Tags, " ")
@@ -113,9 +113,111 @@ func (bug Bug) SetSecurityRelated(related bool) {
 // LinkBranch associates a branch with this bug.
 func (bug Bug) LinkBranch(branch Branch) os.Error {
 	params := Params{
-		"ws.op": "linkBranch",
+		"ws.op":  "linkBranch",
 		"branch": branch.URL(),
 	}
 	_, err := bug.Post(params)
 	return err
+}
+
+// A BugTask represents the association of a bug with a project
+// or source package, and the related information.
+type BugTask struct {
+	Resource
+}
+
+type Importance string
+
+const (
+	ImUnknown   Importance = "Unknown"
+	ImCritical  Importance = "Critical"
+	ImHigh      Importance = "High"
+	ImMedium    Importance = "Medium"
+	ImLow       Importance = "Low"
+	ImWishlist  Importance = "Wishlist"
+	ImUndecided Importance = "Undecided"
+)
+
+type Status string
+
+const (
+	StUnknown      Status = "Unknown"
+	StNew          Status = "New"
+	StIncomplete   Status = "Incomplete"
+	StOpinion      Status = "Opinion"
+	StInvalid      Status = "Invalid"
+	StWontFix      Status = "Won't fix"
+	StExpired      Status = "Expired"
+	StConfirmed    Status = "Confirmed"
+	StTriaged      Status = "Triaged"
+	StInProgress   Status = "In Progress"
+	StFixCommitted Status = "Fix Committed"
+	StFixReleased  Status = "Fix Released"
+)
+
+// Status returns the current status for the bug task. See
+// the Status type for supported values.
+func (task BugTask) Status() Status {
+	return Status(task.StringField("status"))
+}
+
+// Importance returns the current importance for the bug task. See
+// the Importance type for supported values.
+func (task BugTask) Importance() Importance {
+	return Importance(task.StringField("importance"))
+}
+
+// Assignee returns the person currently assigned to work on the task.
+func (task BugTask) Assignee() (person Person, err os.Error) {
+	r, err := task.GetLink("assignee_link")
+	return Person{r}, err
+}
+
+// Milestone returns the milestone the task is currently targeted at.
+func (task BugTask) Milestone() (ms Milestone, err os.Error) {
+	r, err := task.GetLink("milestone_link")
+	return Milestone{r}, err
+}
+
+// SetStatus changes the current status for the bug task. See
+// the Status type for supported values.
+func (task BugTask) SetStatus(status Status) {
+	task.SetField("status", string(status))
+}
+
+// Importance changes the current importance for the bug task. See
+// the Importance type for supported values.
+func (task BugTask) SetImportance(importance Importance) {
+	task.SetField("importance", string(importance))
+}
+
+// SetAssignee changes the person currently assigned to work on the task.
+func (task BugTask) SetAssignee(person Person) {
+	task.SetField("assignee_link", person.URL())
+}
+
+// SetMilestone changes the milestone the task is currently targeted at.
+func (task BugTask) SetMilestone(ms Milestone) {
+	task.SetField("milestone_link", ms.URL())
+}
+
+// BugTaskList represents a list of BugTasks for iteration.
+type BugTaskList struct {
+	Resource
+}
+
+// For iterates over the list of bug tasks and calls f for each one.
+// If f returns a non-nil error, iteration will stop and the error will
+// be returned as the result of For.
+func (list BugTaskList) For(f func(bt BugTask) os.Error) os.Error {
+	return list.Resource.For(func(r Resource) os.Error {
+		f(BugTask{r})
+		return nil
+	})
+}
+
+// Tasks returns the list of bug tasks associated with the bug.
+func (bug Bug) Tasks() (list BugTaskList, err os.Error) {
+	r, err := bug.GetLink("bug_tasks_collection_link")
+	return BugTaskList{r}, err
 }

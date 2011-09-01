@@ -3,6 +3,7 @@ package lpad_test
 import (
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
+	"os"
 )
 
 func (s *ModelS) TestBug(c *C) {
@@ -31,6 +32,51 @@ func (s *ModelS) TestBug(c *C) {
 	c.Assert(bug.Tags(), Equals, []string{"new", "tags"})
 	c.Assert(bug.Private(), Equals, false)
 	c.Assert(bug.SecurityRelated(), Equals, false)
+}
+
+func (s *ModelS) TestBugTask(c *C) {
+	m := M{
+		"assignee_link": testServer.URL + "/assignee_link",
+		"milestone_link": testServer.URL + "/milestone_link",
+		"status": "New",
+		"importance": "High",
+	}
+	task := lpad.BugTask{lpad.NewResource(nil, "", "", m)}
+
+	c.Assert(task.Status(), Equals, lpad.StNew)
+	c.Assert(task.Importance(), Equals, lpad.ImHigh)
+	task.SetStatus(lpad.StInProgress)
+	task.SetImportance(lpad.ImCritical)
+	c.Assert(task.Status(), Equals, lpad.StInProgress)
+	c.Assert(task.Importance(), Equals, lpad.ImCritical)
+
+	testServer.PrepareResponse(200, jsonType, `{"display_name": "Joe"}`)
+	testServer.PrepareResponse(200, jsonType, `{"name": "mymiles"}`)
+
+	assignee, err := task.Assignee()
+	c.Assert(err, IsNil)
+	c.Assert(assignee.DisplayName(), Equals, "Joe")
+
+	milestone, err := task.Milestone()
+	c.Assert(err, IsNil)
+	c.Assert(milestone.Name(), Equals, "mymiles")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/assignee_link")
+
+	req = testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/milestone_link")
+
+	milestone = lpad.Milestone{lpad.NewResource(nil, "", "/new_milestone_link", nil)}
+	assignee = lpad.Person{lpad.NewResource(nil, "", "/new_assignee_link", nil)}
+
+	task.SetMilestone(milestone)
+	task.SetAssignee(assignee)
+
+	c.Assert(task.StringField("milestone_link"), Equals, "/new_milestone_link")
+	c.Assert(task.StringField("assignee_link"), Equals, "/new_assignee_link")
 }
 
 func (s *ModelS) TestRootBug(c *C) {
@@ -128,4 +174,37 @@ func (s *ModelS) TestBugLinkBranch(c *C) {
 	c.Assert(req.URL.Path, Equals, "/bugs/123456")
 	c.Assert(req.Form["ws.op"], Equals, []string{"linkBranch"})
 	c.Assert(req.Form["branch"], Equals, []string{branch.URL()})
+}
+
+func (s *ModelS) TestBugTasks(c *C) {
+	data := `{
+		"total_size": 2,
+		"start": 0,
+		"entries": [{
+			"self_link": "http://self0",
+			"status": "New"
+		}, {
+			"self_link": "http://self1",
+			"status": "Unknown"
+		}]
+	}`
+	testServer.PrepareResponse(200, jsonType, data)
+	m := M{
+		"bug_tasks_collection_link": testServer.URL + "/col_link",
+	}
+	bug := lpad.Bug{lpad.NewResource(nil, testServer.URL, "", m)}
+	list, err := bug.Tasks()
+	c.Assert(err, IsNil)
+	c.Assert(list.TotalSize(), Equals, 2)
+
+	status := []lpad.Status{}
+	list.For(func(task lpad.BugTask) os.Error {
+		status = append(status, task.Status())
+		return nil
+	})
+	c.Assert(status, Equals, []lpad.Status{lpad.StNew, lpad.StUnknown})
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/col_link")
 }
