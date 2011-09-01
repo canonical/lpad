@@ -67,6 +67,48 @@ func (s *ModelS) TestMilestone(c *C) {
 	c.Assert(ms.WebPage(), Equals, "http://other")
 }
 
+func (s *ModelS) TestSeries(c *C) {
+	m := M{
+		"name": "thename",
+		"title": "Title",
+		"summary": "Summary",
+		"is_active": true,
+		"web_link": "http://page",
+		"branch_link": testServer.URL + "/branch_link",
+	}
+
+	sr := lpad.Series{lpad.NewResource(nil, "", "", m)}
+	c.Assert(sr.Name(), Equals, "thename")
+	c.Assert(sr.Title(), Equals, "Title")
+	c.Assert(sr.Summary(), Equals, "Summary")
+	c.Assert(sr.Active(), Equals, true)
+	c.Assert(sr.WebPage(), Equals, "http://page")
+	sr.SetName("newname")
+	sr.SetTitle("New Title")
+	sr.SetSummary("New summary")
+	sr.SetActive(false)
+	sr.SetWebPage("http://other")
+	c.Assert(sr.Name(), Equals, "newname")
+	c.Assert(sr.Title(), Equals, "New Title")
+	c.Assert(sr.Summary(), Equals, "New summary")
+	c.Assert(sr.Active(), Equals, false)
+	c.Assert(sr.WebPage(), Equals, "http://other")
+
+	testServer.PrepareResponse(200, jsonType, `{"unique_name": "lp:thebranch"}`)
+
+	b, err := sr.Branch()
+	c.Assert(err, IsNil)
+	c.Assert(b.UniqueName(), Equals, "lp:thebranch")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/branch_link")
+
+	b = lpad.Branch{lpad.NewResource(nil, "", "/new_branch_link", nil)}
+	sr.SetBranch(b)
+	c.Assert(sr.StringField("branch_link"), Equals, "/new_branch_link")
+}
+
 func (s *ModelS) TestRootProject(c *C) {
 	data := `{
 		"name": "Name",
@@ -108,6 +150,39 @@ func (s *ModelS) TestProjectActiveMilestones(c *C) {
 	names := []string{}
 	list.For(func(ms lpad.Milestone) os.Error {
 		names = append(names, ms.Name())
+		return nil
+	})
+	c.Assert(names, Equals, []string{"Name0", "Name1"})
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/col_link")
+}
+
+func (s *ModelS) TestProjectSeries(c *C) {
+	data := `{
+		"total_size": 2,
+		"start": 0,
+		"entries": [{
+			"self_link": "http://self0",
+			"name": "Name0"
+		}, {
+			"self_link": "http://self1",
+			"name": "Name1"
+		}]
+	}`
+	testServer.PrepareResponse(200, jsonType, data)
+	m := M{
+		"series_collection_link": testServer.URL + "/col_link",
+	}
+	project := lpad.Project{lpad.NewResource(nil, testServer.URL, "", m)}
+	list, err := project.Series()
+	c.Assert(err, IsNil)
+	c.Assert(list.TotalSize(), Equals, 2)
+
+	names := []string{}
+	list.For(func(s lpad.Series) os.Error {
+		names = append(names, s.Name())
 		return nil
 	})
 	c.Assert(names, Equals, []string{"Name0", "Name1"})

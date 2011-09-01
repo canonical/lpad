@@ -92,6 +92,12 @@ func (p Project) ActiveMilestones() (milestones MilestoneList, err os.Error) {
 	return MilestoneList{r}, err
 }
 
+// Series returns the list of series associated with the project, ordered by the target date.
+func (p Project) Series() (series SeriesList, err os.Error) {
+	r, err := p.GetLink("series_collection_link")
+	return SeriesList{r}, err
+}
+
 // The Milestone type represents a milestone associated with a project.
 type Milestone struct {
 	Resource
@@ -123,7 +129,7 @@ func (ms Milestone) WebPage() string {
 	return ms.StringField("web_link")
 }
 
-// Active returns true if the milestone is still active.
+// Active returns true if the milestone is still in active development.
 func (ms Milestone) Active() bool {
 	return ms.BoolField("is_active")
 }
@@ -159,7 +165,8 @@ func (ms Milestone) SetWebPage(link string) {
 	ms.SetField("web_link", link)
 }
 
-// SetActive sets whether the milestone is still active or not.
+// SetActive sets whether the milestone is still in active
+// development or not.
 func (ms Milestone) SetActive(active bool) {
 	ms.SetField("is_active", active)
 }
@@ -177,9 +184,93 @@ type MilestoneList struct {
 // For iterates over the list of milestones and calls f for each one.
 // If f returns a non-nil error, iteration will stop and the error will
 // be returned as the result of For.
-func (list MilestoneList) For(f func(t Milestone) os.Error) os.Error {
+func (list MilestoneList) For(f func(m Milestone) os.Error) os.Error {
 	return list.Resource.For(func(r Resource) os.Error {
 		f(Milestone{r})
+		return nil
+	})
+}
+
+// The Series type represents a series associated with a project.
+type Series struct {
+	Resource
+}
+
+// Name returns the series name, which is a unique name that identifies
+// it and is used in URLs. It consists of only lowercase letters, digits,
+// and simple punctuation.  For example, "2.0" or "trunk".
+func (s Series) Name() string {
+	return s.StringField("name")
+}
+
+// Title returns the series context title for pages.
+func (s Series) Title() string {
+	return s.StringField("title")
+}
+
+// Summary returns the summary for this project series.
+func (s Series) Summary() string {
+	return s.StringField("summary")
+}
+
+// WebPage returns the web page link associated with this series.
+func (s Series) WebPage() string {
+	return s.StringField("web_link")
+}
+
+// Active returns true if this project series is still in active development.
+func (s Series) Active() bool {
+	return s.BoolField("is_active")
+}
+
+// Branch returns the Bazaar branch associated with this project series.
+func (s Series) Branch() (branch Branch, err os.Error) {
+	r, err := s.GetLink("branch_link")
+	return Branch{r}, err
+}
+
+// SetName changes the series name, which must consists of only letters,
+// numbers, and simple punctuation. For example: "2.0" or "trunk".
+func (s Series) SetName(name string) {
+	s.SetField("name", name)
+}
+
+// SetTitle changes the series title.
+func (s Series) SetTitle(title string) {
+	s.SetField("title", title)
+}
+
+// SetSummary changes the summary for this project series.
+func (s Series) SetSummary(summary string) {
+	s.SetField("summary", summary)
+}
+
+// SetWebPage sets the web page link associated with this project series.
+func (s Series) SetWebPage(link string) {
+	s.SetField("web_link", link)
+}
+
+// SetActive sets whether the series is still in active development or not.
+func (s Series) SetActive(active bool) {
+	s.SetField("is_active", active)
+}
+
+// SetBranch changes the Bazaar branch associated with this project series.
+func (s Series) SetBranch(branch Branch) {
+	s.SetField("branch_link", branch.URL())
+}
+
+// The SeriesList represents a list of project series.
+type SeriesList struct {
+	Resource
+}
+
+// For iterates over the list of series and calls f for each one.
+// If f returns a non-nil error, iteration will stop and the error will
+// be returned as the result of For.
+func (list SeriesList) For(f func(s Series) os.Error) os.Error {
+	return list.Resource.For(func(r Resource) os.Error {
+		f(Series{r})
 		return nil
 	})
 }
