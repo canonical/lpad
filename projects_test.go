@@ -13,6 +13,7 @@ func (s *ModelS) TestProject(c *C) {
 		"title": "Title",
 		"summary": "Summary",
 		"description": "Description",
+		"development_focus_link": testServer.URL + "/focus_link",
 	}
 	project := lpad.Project{lpad.NewResource(nil, "", "", m)}
 	c.Assert(project.Name(), Equals, "thename")
@@ -30,6 +31,15 @@ func (s *ModelS) TestProject(c *C) {
 	c.Assert(project.Title(), Equals, "New Title")
 	c.Assert(project.Summary(), Equals, "New summary")
 	c.Assert(project.Description(), Equals, "New description")
+
+	testServer.PrepareResponse(200, jsonType, `{"name": "seriesname"}`)
+	series, err := project.FocusSeries()
+	c.Assert(err, IsNil)
+	c.Assert(series.Name(), Equals, "seriesname")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/focus_link")
 }
 
 func (s *ModelS) TestMilestone(c *C) {
@@ -77,26 +87,26 @@ func (s *ModelS) TestSeries(c *C) {
 		"branch_link": testServer.URL + "/branch_link",
 	}
 
-	sr := lpad.Series{lpad.NewResource(nil, "", "", m)}
-	c.Assert(sr.Name(), Equals, "thename")
-	c.Assert(sr.Title(), Equals, "Title")
-	c.Assert(sr.Summary(), Equals, "Summary")
-	c.Assert(sr.Active(), Equals, true)
-	c.Assert(sr.WebPage(), Equals, "http://page")
-	sr.SetName("newname")
-	sr.SetTitle("New Title")
-	sr.SetSummary("New summary")
-	sr.SetActive(false)
-	sr.SetWebPage("http://other")
-	c.Assert(sr.Name(), Equals, "newname")
-	c.Assert(sr.Title(), Equals, "New Title")
-	c.Assert(sr.Summary(), Equals, "New summary")
-	c.Assert(sr.Active(), Equals, false)
-	c.Assert(sr.WebPage(), Equals, "http://other")
+	series := lpad.Series{lpad.NewResource(nil, "", "", m)}
+	c.Assert(series.Name(), Equals, "thename")
+	c.Assert(series.Title(), Equals, "Title")
+	c.Assert(series.Summary(), Equals, "Summary")
+	c.Assert(series.Active(), Equals, true)
+	c.Assert(series.WebPage(), Equals, "http://page")
+	series.SetName("newname")
+	series.SetTitle("New Title")
+	series.SetSummary("New summary")
+	series.SetActive(false)
+	series.SetWebPage("http://other")
+	c.Assert(series.Name(), Equals, "newname")
+	c.Assert(series.Title(), Equals, "New Title")
+	c.Assert(series.Summary(), Equals, "New summary")
+	c.Assert(series.Active(), Equals, false)
+	c.Assert(series.WebPage(), Equals, "http://other")
 
 	testServer.PrepareResponse(200, jsonType, `{"unique_name": "lp:thebranch"}`)
 
-	b, err := sr.Branch()
+	b, err := series.Branch()
 	c.Assert(err, IsNil)
 	c.Assert(b.UniqueName(), Equals, "lp:thebranch")
 
@@ -105,8 +115,8 @@ func (s *ModelS) TestSeries(c *C) {
 	c.Assert(req.URL.Path, Equals, "/branch_link")
 
 	b = lpad.Branch{lpad.NewResource(nil, "", "/new_branch_link", nil)}
-	sr.SetBranch(b)
-	c.Assert(sr.StringField("branch_link"), Equals, "/new_branch_link")
+	series.SetBranch(b)
+	c.Assert(series.StringField("branch_link"), Equals, "/new_branch_link")
 }
 
 func (s *ModelS) TestRootProject(c *C) {
@@ -159,7 +169,7 @@ func (s *ModelS) TestProjectActiveMilestones(c *C) {
 	c.Assert(req.URL.Path, Equals, "/col_link")
 }
 
-func (s *ModelS) TestProjectSeries(c *C) {
+func (s *ModelS) TestProjectAllSeries(c *C) {
 	data := `{
 		"total_size": 2,
 		"start": 0,
@@ -176,7 +186,7 @@ func (s *ModelS) TestProjectSeries(c *C) {
 		"series_collection_link": testServer.URL + "/col_link",
 	}
 	project := lpad.Project{lpad.NewResource(nil, testServer.URL, "", m)}
-	list, err := project.Series()
+	list, err := project.AllSeries()
 	c.Assert(err, IsNil)
 	c.Assert(list.TotalSize(), Equals, 2)
 

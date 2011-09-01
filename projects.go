@@ -92,10 +92,18 @@ func (p Project) ActiveMilestones() (milestones MilestoneList, err os.Error) {
 	return MilestoneList{r}, err
 }
 
-// Series returns the list of series associated with the project, ordered by the target date.
-func (p Project) Series() (series SeriesList, err os.Error) {
+// AllSeries returns the list of series associated with the project, ordered by
+// the target date.
+func (p Project) AllSeries() (series SeriesList, err os.Error) {
 	r, err := p.GetLink("series_collection_link")
 	return SeriesList{r}, err
+}
+
+// FocusSeries returns the development series set as the current
+// development focus.
+func (p Project) FocusSeries() (series Series, err os.Error) {
+	r, err := p.GetLink("development_focus_link")
+	return Series{r}, err
 }
 
 // The Milestone type represents a milestone associated with a project.
