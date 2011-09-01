@@ -21,6 +21,7 @@ func (s *ModelS) TestMergeProposal(c *C) {
 		"commit_message": "Commit message",
 		"queue_status": "Needs review",
 		"address": "some@email.com",
+		"web_link": "http://page",
 		"prerequisite_branch_link": testServer.URL + "/prereq_link",
 		"target_branch_link": testServer.URL + "/target_link",
 		"source_branch_link": testServer.URL + "/source_link",
@@ -30,6 +31,7 @@ func (s *ModelS) TestMergeProposal(c *C) {
 	c.Assert(mp.CommitMessage(), Equals, "Commit message")
 	c.Assert(mp.Status(), Equals, "Needs review")
 	c.Assert(mp.Email(), Equals, "some@email.com")
+	c.Assert(mp.WebPage(), Equals, "http://page")
 
 	testServer.PrepareResponse(200, jsonType, `{"unique_name": "branch1"}`)
 	testServer.PrepareResponse(200, jsonType, `{"unique_name": "branch2"}`)

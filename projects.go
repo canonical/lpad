@@ -132,7 +132,7 @@ func (ms Milestone) Summary() string {
 	return ms.StringField("summary")
 }
 
-// WebPage returns the web page link associated with this milestone.
+// WebPage returns the URL for accessing this milestone in a browser.
 func (ms Milestone) WebPage() string {
 	return ms.StringField("web_link")
 }
@@ -166,11 +166,6 @@ func (ms Milestone) SetTitle(title string) {
 // SetSummary sets the summary of features and status of this milestone.
 func (ms Milestone) SetSummary(summary string) {
 	ms.SetField("summary", summary)
-}
-
-// SetWebPage sets the web page link associated with this milestone.
-func (ms Milestone) SetWebPage(link string) {
-	ms.SetField("web_link", link)
 }
 
 // SetActive sets whether the milestone is still in active
@@ -221,7 +216,7 @@ func (s Series) Summary() string {
 	return s.StringField("summary")
 }
 
-// WebPage returns the web page link associated with this series.
+// WebPage returns the URL for accessing this project series in a browser.
 func (s Series) WebPage() string {
 	return s.StringField("web_link")
 }
@@ -251,11 +246,6 @@ func (s Series) SetTitle(title string) {
 // SetSummary changes the summary for this project series.
 func (s Series) SetSummary(summary string) {
 	s.SetField("summary", summary)
-}
-
-// SetWebPage sets the web page link associated with this project series.
-func (s Series) SetWebPage(link string) {
-	s.SetField("web_link", link)
 }
 
 // SetActive sets whether the series is still in active development or not.

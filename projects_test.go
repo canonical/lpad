@@ -67,14 +67,12 @@ func (s *ModelS) TestMilestone(c *C) {
 	ms.SetSummary("New summary")
 	ms.SetDate("2011-09-01")
 	ms.SetActive(false)
-	ms.SetWebPage("http://other")
 	c.Assert(ms.Name(), Equals, "newname")
 	c.Assert(ms.CodeName(), Equals, "newcodename")
 	c.Assert(ms.Title(), Equals, "New Title")
 	c.Assert(ms.Summary(), Equals, "New summary")
 	c.Assert(ms.Date(), Equals, "2011-09-01")
 	c.Assert(ms.Active(), Equals, false)
-	c.Assert(ms.WebPage(), Equals, "http://other")
 }
 
 func (s *ModelS) TestSeries(c *C) {
@@ -97,12 +95,10 @@ func (s *ModelS) TestSeries(c *C) {
 	series.SetTitle("New Title")
 	series.SetSummary("New summary")
 	series.SetActive(false)
-	series.SetWebPage("http://other")
 	c.Assert(series.Name(), Equals, "newname")
 	c.Assert(series.Title(), Equals, "New Title")
 	c.Assert(series.Summary(), Equals, "New summary")
 	c.Assert(series.Active(), Equals, false)
-	c.Assert(series.WebPage(), Equals, "http://other")
 
 	testServer.PrepareResponse(200, jsonType, `{"unique_name": "lp:thebranch"}`)
 

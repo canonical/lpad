@@ -123,3 +123,9 @@ func (mp MergeProposal) PreReq() (branch Branch, err os.Error) {
 	r, err := mp.GetLink("prerequisite_branch_link")
 	return Branch{r}, err
 }
+
+// WebPage returns the URL for accessing this merge proposal
+// in a browser.
+func (mp MergeProposal) WebPage() string {
+	return mp.StringField("web_link")
+}
