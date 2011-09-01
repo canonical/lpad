@@ -15,6 +15,20 @@ func (s *ModelS) TestBranch(c *C) {
 	c.Assert(branch.UniqueName(), Equals, "lp:~joe/ensemble/some-branch")
 }
 
+func (s *ModelS) TestRootBranch(c *C) {
+	data := `{"unique_name": "lp:branch"}`
+	testServer.PrepareResponse(200, jsonType, data)
+
+	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+
+	branch, err := root.Branch("lp:~joe/project/branch-name")
+	c.Assert(err, IsNil)
+	c.Assert(branch.UniqueName(), Equals, "lp:branch")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.URL.Path, Equals, "/~joe/project/branch-name")
+}
+
 func (s *ModelS) TestMergeProposal(c *C) {
 	m := M{
 		"description": "Description",

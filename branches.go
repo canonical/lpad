@@ -8,11 +8,12 @@ import (
 
 // Branch returns a branch for the provided id. The id should be
 // prefixed with lp: as conventional for Launchpad.
-func (root Root) Branch(id string) (project Project, err os.Error) {
+func (root Root) Branch(id string) (branch Branch, err os.Error) {
 	if !strings.HasPrefix(id, "lp:") {
 		err = os.NewError("Invalid branch id provided: " + id)
 		return
 	}
+	id = id[3:]
 	// Let's avoid a silly query injection issue here.
 	parts := strings.Split(id, "/")
 	for i, part := range parts {
@@ -20,7 +21,7 @@ func (root Root) Branch(id string) (project Project, err os.Error) {
 	}
 	id = strings.Join(parts, "/")
 	r, err := root.GetLocation("/" + id)
-	return Project{r}, err
+	return Branch{r}, err
 }
 
 // The Branch type represents a project in Launchpad.
