@@ -2,25 +2,15 @@ package lpad
 
 import (
 	"os"
-	"strings"
-	"url"
 )
 
-// Branch returns a branch for the provided id. The id should be
-// prefixed with lp: as conventional for Launchpad.
-func (root Root) Branch(id string) (branch Branch, err os.Error) {
-	if !strings.HasPrefix(id, "lp:") {
-		err = os.NewError("Invalid branch id provided: " + id)
-		return
-	}
-	id = id[3:]
-	// Let's avoid a silly query injection issue here.
-	parts := strings.Split(id, "/")
-	for i, part := range parts {
-		parts[i] = url.QueryEscape(part)
-	}
-	id = strings.Join(parts, "/")
-	r, err := root.GetLocation("/" + id)
+// Branch returns a branch for the provided URL. The URL can be in
+// the short form lp: notation, or the web address rooted at
+// http://bazaar.launchpad.net/
+func (root Root) Branch(url string) (branch Branch, err os.Error) {
+	params := Params{"ws.op": "getByUrl", "url": url}
+	r := root.Location("/branches")
+	err = r.Get(params)
 	return Branch{r}, err
 }
 

@@ -26,7 +26,9 @@ func (s *ModelS) TestRootBranch(c *C) {
 	c.Assert(branch.UniqueName(), Equals, "lp:branch")
 
 	req := testServer.WaitRequest()
-	c.Assert(req.URL.Path, Equals, "/~joe/project/branch-name")
+	c.Assert(req.URL.Path, Equals, "/branches")
+	c.Assert(req.Form["ws.op"], Equals, []string{"getByUrl"})
+	c.Assert(req.Form["url"], Equals, []string{"lp:~joe/project/branch-name"})
 }
 
 func (s *ModelS) TestMergeProposal(c *C) {
