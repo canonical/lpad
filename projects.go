@@ -48,6 +48,11 @@ func (p Project) Description() string {
 	return p.StringField("description")
 }
 
+// WebPage returns the URL for accessing this project in a browser.
+func (p Project) WebPage() string {
+	return p.StringField("web_link")
+}
+
 // SetName changes the project name, which must be composed of at
 // least one lowercase letter or number, followed by letters, numbers,
 // dots, hyphens or pluses. This is a short name used in URLs.

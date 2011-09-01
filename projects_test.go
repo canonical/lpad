@@ -13,6 +13,7 @@ func (s *ModelS) TestProject(c *C) {
 		"title": "Title",
 		"summary": "Summary",
 		"description": "Description",
+		"web_link": "http://page",
 		"development_focus_link": testServer.URL + "/focus_link",
 	}
 	project := lpad.Project{lpad.NewResource(nil, "", "", m)}
@@ -21,6 +22,7 @@ func (s *ModelS) TestProject(c *C) {
 	c.Assert(project.Title(), Equals, "Title")
 	c.Assert(project.Summary(), Equals, "Summary")
 	c.Assert(project.Description(), Equals, "Description")
+	c.Assert(project.WebPage(), Equals, "http://page")
 	project.SetName("newname")
 	project.SetDisplayName("New Display Name")
 	project.SetTitle("New Title")

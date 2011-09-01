@@ -79,6 +79,11 @@ func (bug Bug) SecurityRelated() bool {
 	return bug.BoolField("security_related")
 }
 
+// WebPage returns the URL for accessing this bug in a browser.
+func (bug Bug) WebPage() string {
+	return bug.StringField("web_link")
+}
+
 // SetTitle changes the bug title.
 // Patch must be called to commit all changes.
 func (bug Bug) SetTitle(title string) {

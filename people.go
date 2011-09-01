@@ -131,6 +131,11 @@ func (person Person) DisplayName() string {
 	return person.StringField("display_name")
 }
 
+// WebPage returns the URL for accessing this person's page in a browser.
+func (person Person) WebPage() string {
+	return person.StringField("web_link")
+}
+
 // SetDisplayName changes the person's name as it would be displayed
 // throughout Launchpad.  Most people use their full name.
 // Patch must be called to commit all changes.
@@ -206,4 +211,9 @@ func (team Team) DisplayName() string {
 // throughout Launchpad.  Patch must be called to commit all changes.
 func (team Team) SetDisplayName(name string) {
 	team.SetField("display_name", name)
+}
+
+// WebPage returns the URL for accessing this team's page in a browser.
+func (team Team) WebPage() string {
+	return team.StringField("web_link")
 }

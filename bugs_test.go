@@ -14,6 +14,7 @@ func (s *ModelS) TestBug(c *C) {
 		"tags": "a b c",
 		"private": true,
 		"security_related": true,
+		"web_link": "http://page",
 	}
 	bug := lpad.Bug{lpad.NewResource(nil, "", "", m)}
 	c.Assert(bug.Id(), Equals, 123456)
@@ -22,6 +23,7 @@ func (s *ModelS) TestBug(c *C) {
 	c.Assert(bug.Tags(), Equals, []string{"a", "b", "c"})
 	c.Assert(bug.Private(), Equals, true)
 	c.Assert(bug.SecurityRelated(), Equals, true)
+	c.Assert(bug.WebPage(), Equals, "http://page")
 	bug.SetTitle("New title")
 	bug.SetDescription("New description")
 	bug.SetTags([]string{"new", "tags"})
