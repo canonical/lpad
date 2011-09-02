@@ -34,6 +34,11 @@ func (b Branch) UniqueName() string {
 	return b.StringField("unique_name")
 }
 
+// WebPage returns the URL for accessing this branch in a browser.
+func (b Branch) WebPage() string {
+	return b.StringField("web_link")
+}
+
 type MergeStub struct {
 	Description string
 	CommitMessage string
@@ -50,7 +55,7 @@ func (b Branch) ProposeMerge(stub *MergeStub) (mp MergeProposal, err os.Error) {
 	}
 	params := Params{
 		"ws.op": "createMergeProposal",
-		"target_branch": stub.Target.URL(),
+		"target_branch": stub.Target.AbsLoc(),
 	}
 	if stub.Description != "" {
 		params["initial_comment"] = stub.Description
@@ -62,7 +67,7 @@ func (b Branch) ProposeMerge(stub *MergeStub) (mp MergeProposal, err os.Error) {
 		params["needs_review"] = "true"
 	}
 	if stub.PreReq.IsValid() {
-		params["prerequisite_branch"] = stub.PreReq.URL()
+		params["prerequisite_branch"] = stub.PreReq.AbsLoc()
 	}
 	v, err := b.Post(params)
 	return MergeProposal{v}, err

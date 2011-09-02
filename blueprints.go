@@ -71,7 +71,7 @@ func (bp Blueprint) WebPage() string {
 func (bp Blueprint) LinkBranch(branch Branch) os.Error {
 	params := Params{
 		"ws.op":  "linkBranch",
-		"branch": branch.URL(),
+		"branch": branch.AbsLoc(),
 	}
 	_, err := bp.Post(params)
 	return err

@@ -39,12 +39,12 @@ func (s *SessionS) TestLogin(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
 
 	auth := &dummyAuth{}
-	root, err := lpad.Login(testServer.URL, auth)
+	root, err := lpad.Login(lpad.APIBase(testServer.URL), auth)
 	c.Assert(err, IsNil)
 	c.Assert(auth.loginBaseURL, Equals, testServer.URL)
 
-	c.Assert(root.BaseURL(), Equals, testServer.URL)
-	c.Assert(root.URL(), Equals, testServer.URL)
+	c.Assert(root.BaseLoc(), Equals, testServer.URL)
+	c.Assert(root.AbsLoc(), Equals, testServer.URL)
 	c.Assert(len(root.Map()), Equals, 0)
 
 	err = root.Get(nil)

@@ -69,11 +69,35 @@ func (s *ValueS) TestGet(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(v.Map()["a"], Equals, float64(1))
 	c.Assert(v.Map()["b"], Equals, []interface{}{float64(1), float64(2)})
+	c.Assert(v.AbsLoc(), Equals, testServer.URL+"/myvalue")
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/myvalue")
 	c.Assert(req.Header.Get("Accept"), Equals, "application/json")
+}
+
+func (s *ValueS) TestGetAbsLoc(c *C) {
+	data := `{"a": 1, "self_link": "` + testServer.URL + `/self_link"}`
+	testServer.PrepareResponse(200, jsonType, data)
+	testServer.PrepareResponse(200, jsonType, data)
+
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	err := v.Get(nil)
+	c.Assert(err, IsNil)
+	c.Assert(v.AbsLoc(), Equals, testServer.URL + "/self_link")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/myvalue")
+
+	err = v.Get(nil)
+	c.Assert(err, IsNil)
+	c.Assert(v.AbsLoc(), Equals, testServer.URL + "/self_link")
+
+	req = testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/self_link")
 }
 
 func (s *ValueS) TestGetWithParams(c *C) {
@@ -131,7 +155,7 @@ func (s *ValueS) TestGetRedirect(c *C) {
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
 	err := v.Get(nil)
 	c.Assert(err, IsNil)
-	c.Assert(v.URL(), Equals, testServer.URL+"/myothervalue")
+	c.Assert(v.AbsLoc(), Equals, testServer.URL+"/myothervalue")
 	c.Assert(v.Map()["ok"], Equals, true)
 
 	req := testServer.WaitRequest()
@@ -178,7 +202,7 @@ func (s *ValueS) TestPost(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(v.Map(), Equals, map[string]interface{}{})
 	c.Assert(other.Map()["ok"], Equals, true)
-	c.Assert(other.URL(), Equals, v.URL())
+	c.Assert(other.AbsLoc(), Equals, v.AbsLoc())
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
@@ -209,8 +233,8 @@ func (s *ValueS) TestPostCreation(c *C) {
 	other, err := v.Post(nil)
 	c.Assert(err, IsNil)
 	c.Assert(len(v.Map()), Equals, 0)
-	c.Assert(other.BaseURL(), Equals, testServer.URL)
-	c.Assert(other.URL(), Equals, testServer.URL+"/newvalue")
+	c.Assert(other.BaseLoc(), Equals, testServer.URL)
+	c.Assert(other.AbsLoc(), Equals, testServer.URL+"/newvalue")
 	c.Assert(other.Map()["ok"], Equals, true)
 
 	req := testServer.WaitRequest()
@@ -233,7 +257,7 @@ func (s *ValueS) TestPostSign(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(v.Map()), Equals, 0)
 	c.Assert(other.Map()["ok"], Equals, true)
-	c.Assert(other.URL(), Equals, v.URL())
+	c.Assert(other.AbsLoc(), Equals, v.AbsLoc())
 	c.Assert(other.Session(), Equals, v.Session())
 
 	req := testServer.WaitRequest()
@@ -309,7 +333,7 @@ func (s *ValueS) TestPatchWithContent(c *C) {
 }
 
 type locationTest struct {
-	BaseURL, URL, Location, Result string
+	BaseLoc, Loc, RelLoc, AbsLoc string
 }
 
 var locationTests = []locationTest{
@@ -324,10 +348,10 @@ func (s *ValueS) TestLocation(c *C) {
 	session := lpad.NewSession(oauth)
 
 	for _, test := range locationTests {
-		r1 := lpad.NewValue(session, test.BaseURL, test.URL, nil)
-		r2 := r1.Location(test.Location)
-		c.Assert(r2.URL(), Equals, test.Result)
-		c.Assert(r2.BaseURL(), Equals, test.BaseURL)
+		r1 := lpad.NewValue(session, test.BaseLoc, test.Loc, nil)
+		r2 := r1.Location(test.RelLoc)
+		c.Assert(r2.AbsLoc(), Equals, test.AbsLoc)
+		c.Assert(r2.BaseLoc(), Equals, test.BaseLoc)
 		c.Assert(r2.Session(), Equals, session)
 	}
 }
@@ -337,12 +361,12 @@ func (s *ValueS) TestLink(c *C) {
 	session := lpad.NewSession(oauth)
 
 	for _, test := range locationTests {
-		m := map[string]interface{}{"some_link": test.Location}
-		v1 := lpad.NewValue(session, test.BaseURL, test.URL, m)
+		m := map[string]interface{}{"some_link": test.AbsLoc}
+		v1 := lpad.NewValue(session, test.BaseLoc, test.Loc, m)
 		v2, err := v1.Link("some_link")
 		c.Assert(err, IsNil)
-		c.Assert(v2.URL(), Equals, test.Result)
-		c.Assert(v2.BaseURL(), Equals, test.BaseURL)
+		c.Assert(v2.AbsLoc(), Equals, test.AbsLoc)
+		c.Assert(v2.BaseLoc(), Equals, test.BaseLoc)
 		c.Assert(v2.Session(), Equals, session)
 
 		v3, err := v1.Link("bad_link")

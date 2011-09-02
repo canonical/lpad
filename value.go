@@ -38,16 +38,16 @@ func (e *Error) String() string {
 type AnyValue interface {
 	IsValid() bool
 	Session() *Session
-	BaseURL() string
-	URL() string
+	BaseLoc() string
+	AbsLoc() string
 	Map() map[string]interface{}
 	StringField(key string) string
 	IntField(key string) int
 	FloatField(key string) float64
 	BoolField(key string) bool
 	SetField(key string, value interface{})
-	Location(url_ string) *Value
-	GetLocation(url_ string) (v *Value, err os.Error)
+	Location(loc string) *Value
+	GetLocation(loc string) (v *Value, err os.Error)
 	Link(key string) (v *Value, err os.Error)
 	GetLink(key string) (v *Value, err os.Error)
 	Get(params Params) os.Error
@@ -65,8 +65,8 @@ type AnyValue interface {
 // were not yet made available in lpad thorugh more convenient methods.
 type Value struct {
 	session *Session
-	baseurl string
-	url     string
+	baseloc string
+	loc     string
 	m       map[string]interface{}
 	patch   map[string]interface{}
 }
@@ -76,8 +76,8 @@ type Value struct {
 // location in the Launchpad API which is not covered by the supported
 // types yet, see the Link and Location methods on the Value type for more
 // convenient ways to create values.
-func NewValue(session *Session, baseurl, url_ string, m map[string]interface{}) *Value {
-	return &Value{session, baseurl, url_, m, nil}
+func NewValue(session *Session, baseloc, loc string, m map[string]interface{}) *Value {
+	return &Value{session, baseloc, loc, m, nil}
 }
 
 // IsValid returns true if the value is initialized and thus not nil. This
@@ -92,15 +92,18 @@ func (v *Value) Session() *Session {
 	return v.session
 }
 
-// BaseURL returns the URL the session is based on.  Absolute URLs
-// provided to Location and Link will be rooted at this place.
-func (v *Value) BaseURL() string {
-	return v.baseurl
+// BaseLoc returns the API-oriented URL base for the session. Absolute
+// paths provided to Location and Link will be rooted at this place.
+func (v *Value) BaseLoc() string {
+	return v.baseloc
 }
 
-// URL returns the location of this value.
-func (v *Value) URL() string {
-	return v.url
+// AbsLoc returns the API-oriented URL of this value.
+func (v *Value) AbsLoc() string {
+	if self := v.StringField("self_link"); self != "" {
+		return self
+	}
+	return v.loc
 }
 
 // Map returns the dynamic map with the content of this value.
@@ -171,36 +174,35 @@ func (v *Value) SetField(key string, value interface{}) {
 
 func (v *Value) join(part string) string {
 	if part == "" {
-		return v.url
+		return v.loc
 	}
 	if strings.HasPrefix(part, "http://") || strings.HasPrefix(part, "https://") {
 		return part
 	}
-	base := v.baseurl
+	base := v.baseloc
 	if !strings.HasPrefix(part, "/") {
-		// Relative to URL.
-		base = v.url
+		base = v.loc
 	}
-	url_, err := url.Parse(base)
+	u, err := url.Parse(base)
 	if err != nil {
 		panic("Invalid URL: " + base)
 	}
-	url_.Path = path.Join(url_.Path, part)
-	return url_.String()
+	u.Path = path.Join(u.Path, part)
+	return u.String()
 }
 
 // Location returns a new value for a location which may be a
-// full URL, or an absolute path (based on the value's BaseURL),
+// full URL, or an absolute path (based on the value's BaseLoc),
 // or a path relative to the value itself (based on the
 // value's URL).
-func (v *Value) Location(url_ string) *Value {
-	return &Value{session: v.session, baseurl: v.baseurl, url: v.join(url_)}
+func (v *Value) Location(loc string) *Value {
+	return &Value{session: v.session, baseloc: v.baseloc, loc: v.join(loc)}
 }
 
 // GetLocation builds a value with Location and calls Get(nil)
 // on it.  It returns the loaded value in case of success.
-func (v *Value) GetLocation(url_ string) (linkv *Value, err os.Error) {
-	linkv = v.Location(url_)
+func (v *Value) GetLocation(loc string) (linkv *Value, err os.Error) {
+	linkv = v.Location(loc)
 	err = linkv.Get(nil)
 	if err != nil {
 		return nil, err
@@ -213,11 +215,11 @@ func (v *Value) GetLocation(url_ string) (linkv *Value, err os.Error) {
 // requested key isn't found in the value.  This is a convenient
 // way to navigate through *_link values.
 func (v *Value) Link(key string) (linkv *Value, err os.Error) {
-	location, ok := v.m[key].(string)
+	link, ok := v.m[key].(string)
 	if !ok {
 		return nil, os.NewError(fmt.Sprintf("Field %q not found in value", key))
 	}
-	return v.Location(location), nil
+	return v.Location(link), nil
 }
 
 // GetLink builds a value with Link and calls Get(nil) on it.
@@ -285,8 +287,8 @@ func (v *Value) For(f func(*Value) os.Error) os.Error {
 			if !ok {
 				continue
 			}
-			url_, _ := m["self_link"].(string)
-			err := f(&Value{session: v.session, baseurl: v.baseurl, url: url_, m: m})
+			link, _ := m["self_link"].(string)
+			err := f(&Value{session: v.session, baseloc: v.baseloc, loc: link, m: m})
 			if err != nil {
 				return err
 			}
@@ -314,7 +316,7 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 	value = v
 	query := multimap(params).Encode()
 	for redirect := 0; ; redirect++ {
-		req, err := http.NewRequest(method, value.url, nil)
+		req, err := http.NewRequest(method, value.AbsLoc(), nil)
 		req.Header["Accept"] = []string{"application/json"}
 		if err != nil {
 			return nil, err
@@ -346,14 +348,20 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 			}
 		}
 
+		if debugOn {
+			printDump(http.DumpRequest(req, false))
+		}
+
 		resp, err := httpClient.Do(req)
 		if urlerr, ok := err.(*url.Error); ok && urlerr.Error == stopRedir {
 			// fine
 		} else if err != nil {
 			return nil, err
 		}
-		//dump, err := http.DumpResponse(resp, true)
-		//println("Response:", string(dump))
+
+		if debugOn {
+			printDump(http.DumpResponse(resp, false))
+		}
 
 		body, err := ioutil.ReadAll(resp.Body)
 		resp.Body.Close()
@@ -361,10 +369,12 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 		location := resp.Header.Get("Location")
 
 		if method == "POST" {
-			value = &Value{url: v.url, baseurl: v.baseurl, session: v.session}
+			value = &Value{baseloc: v.baseloc, session: v.session}
 			if resp.StatusCode == 201 && location != "" {
-				value.url = location
+				value.loc = location
 				return value.do("GET", nil, nil)
+			} else {
+				value.loc = v.AbsLoc()
 			}
 		}
 
@@ -373,7 +383,7 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 				msg := "Got redirection status " + strconv.Itoa(resp.StatusCode) + " without a Location"
 				return nil, os.NewError(msg)
 			}
-			value.url = location
+			value.loc = location
 			continue
 		}
 
@@ -414,4 +424,20 @@ func multimap(params map[string]string) url.Values {
 		m[k] = []string{v}
 	}
 	return m
+}
+
+var debugOn bool
+
+// SetDebug enables debugging. With debug on requests and responses will all be
+// dumped into the standard error output.
+func SetDebug(debug bool) {
+	debugOn = debug
+}
+
+func printDump(data []byte, err os.Error) {
+	s := string(data)
+	if err != nil {
+		s = err.String()
+	}
+	fmt.Fprintf(os.Stderr, "===== DEBUG =====\n%s\n=================\n", s)
 }

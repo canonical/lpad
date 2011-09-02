@@ -260,7 +260,7 @@ func (s Series) SetActive(active bool) {
 
 // SetBranch changes the Bazaar branch associated with this project series.
 func (s Series) SetBranch(branch Branch) {
-	s.SetField("branch_link", branch.URL())
+	s.SetField("branch_link", branch.AbsLoc())
 }
 
 // The SeriesList represents a list of project series.

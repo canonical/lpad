@@ -9,10 +9,12 @@ func (s *ModelS) TestBranch(c *C) {
 	m := M{
 		"bzr_identity": "lp:~joe/ensemble",
 		"unique_name":  "lp:~joe/ensemble/some-branch",
+		"web_link": "http://page",
 	}
 	branch := lpad.Branch{lpad.NewValue(nil, "", "", m)}
 	c.Assert(branch.Id(), Equals, "lp:~joe/ensemble")
 	c.Assert(branch.UniqueName(), Equals, "lp:~joe/ensemble/some-branch")
+	c.Assert(branch.WebPage(), Equals, "http://page")
 }
 
 func (s *ModelS) TestRootBranch(c *C) {
@@ -101,7 +103,7 @@ func (s *ModelS) TestBranchProposeMerge(c *C) {
 	c.Assert(req.Form["commit_message"], Equals, []string{"Commit message"})
 	c.Assert(req.Form["initial_comment"], Equals, []string{"Description"})
 	c.Assert(req.Form["needs_review"], Equals, []string{"true"})
-	c.Assert(req.Form["target_branch"], Equals, []string{target.URL()})
+	c.Assert(req.Form["target_branch"], Equals, []string{target.AbsLoc()})
 }
 
 func (s *ModelS) TestBranchProposeMergePreReq(c *C) {
@@ -126,6 +128,6 @@ func (s *ModelS) TestBranchProposeMergePreReq(c *C) {
 	c.Assert(req.Form["commit_message"], Equals, []string{})
 	c.Assert(req.Form["initial_comment"], Equals, []string{})
 	c.Assert(req.Form["needs_review"], Equals, []string{})
-	c.Assert(req.Form["target_branch"], Equals, []string{target.URL()})
-	c.Assert(req.Form["prerequisite_branch"], Equals, []string{prereq.URL()})
+	c.Assert(req.Form["target_branch"], Equals, []string{target.AbsLoc()})
+	c.Assert(req.Form["prerequisite_branch"], Equals, []string{prereq.AbsLoc()})
 }

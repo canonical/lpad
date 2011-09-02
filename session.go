@@ -25,9 +25,12 @@ type Auth interface {
 	Sign(req *http.Request) (err os.Error)
 }
 
-const Production = "https://api.launchpad.net/devel/"
-const Staging = "https://api.staging.launchpad.net/devel/"
+type APIBase string
 
+const (
+	Production APIBase = "https://api.launchpad.net/devel/"
+	Staging    APIBase = "https://api.staging.launchpad.net/devel/"
+)
 
 // The Session type represents a session of communication with Launchpad,
 // and carries the authenticator necessary to validate requests in the
@@ -50,7 +53,7 @@ func (s *Session) Sign(req *http.Request) (err os.Error) {
 }
 
 // Login returns a Root object with a new session authenticated in Launchpad
-// using the auth authenticator.  This is the primary method to start using
+// using the auth authenticator. This is the primary method to start using
 // the Launchpad API.
 //
 // This simple example demonstrates how to get a user's name in a console
@@ -66,10 +69,11 @@ func (s *Session) Sign(req *http.Request) (err os.Error) {
 //     }
 //     fmt.Println(me.DisplayName())
 //
-func Login(baseurl string, auth Auth) (root Root, err os.Error) {
-	err = auth.Login(baseurl)
+func Login(baseurl APIBase, auth Auth) (root Root, err os.Error) {
+	baseloc := string(baseurl)
+	err = auth.Login(baseloc)
 	if err != nil {
 		return
 	}
-	return Root{&Value{session: NewSession(auth), baseurl: baseurl, url: baseurl}}, nil
+	return Root{&Value{session: NewSession(auth), baseloc: baseloc, loc: baseloc}}, nil
 }

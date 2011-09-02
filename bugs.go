@@ -28,7 +28,7 @@ func (root Root) CreateBug(stub *BugStub) (bug Bug, err os.Error) {
 		"ws.op":       "createBug",
 		"title":       stub.Title,
 		"description": stub.Description,
-		"target":      stub.Target.URL(),
+		"target":      stub.Target.AbsLoc(),
 	}
 	if len(stub.Tags) > 0 {
 		params["tags"] = strings.Join(stub.Tags, " ")
@@ -119,7 +119,7 @@ func (bug Bug) SetSecurityRelated(related bool) {
 func (bug Bug) LinkBranch(branch Branch) os.Error {
 	params := Params{
 		"ws.op":  "linkBranch",
-		"branch": branch.URL(),
+		"branch": branch.AbsLoc(),
 	}
 	_, err := bug.Post(params)
 	return err
@@ -198,12 +198,12 @@ func (task BugTask) SetImportance(importance Importance) {
 
 // SetAssignee changes the person currently assigned to work on the task.
 func (task BugTask) SetAssignee(person Person) {
-	task.SetField("assignee_link", person.URL())
+	task.SetField("assignee_link", person.AbsLoc())
 }
 
 // SetMilestone changes the milestone the task is currently targeted at.
 func (task BugTask) SetMilestone(ms Milestone) {
-	task.SetField("milestone_link", ms.URL())
+	task.SetField("milestone_link", ms.AbsLoc())
 }
 
 // BugTaskList represents a list of BugTasks for iteration.

@@ -175,7 +175,7 @@ func (s *ModelS) TestBugLinkBranch(c *C) {
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/bugs/123456")
 	c.Assert(req.Form["ws.op"], Equals, []string{"linkBranch"})
-	c.Assert(req.Form["branch"], Equals, []string{branch.URL()})
+	c.Assert(req.Form["branch"], Equals, []string{branch.AbsLoc()})
 }
 
 func (s *ModelS) TestBugTasks(c *C) {
