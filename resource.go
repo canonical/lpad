@@ -13,10 +13,10 @@ import (
 	"url"
 )
 
-// The Params type is a helper to pass parameter into the Resource request
+// The Params type is a helper to pass parameter into the Value request
 // methods.  It may be used as:
 //
-//     resource.Get(lpad.Params{"name": "value"})
+//     value.Get(lpad.Params{"name": "value"})
 //
 type Params map[string]string
 
@@ -32,94 +32,38 @@ func (e *Error) String() string {
 	return "Server returned " + strconv.Itoa(e.StatusCode) + " and body: " + string(e.Body)
 }
 
-// The Resource interface is implemented by all model types and enables
-// accessing the underlying representation of any value.  Besides being
-// used internally to implement the static model itself, this interface
-// enables accessing new features available in Launchpad which were not
-// yet made available in lpad thorugh the more convenient static model.
-type Resource interface {
-
-	// Session returns the session for the interaction with Launchpad.
-	// This session is used to sign any requests delivered to Launchpad.
+// The AnyValue interface is implemented by *Value and thus by all the
+// more specific value types supported. See the Value type for the
+// meaning of these methods.
+type AnyValue interface {
+	IsValid() bool
 	Session() *Session
-
-	// BaseURL returns the URL the session is based on.  Absolute URLs
-	// provided to Location and Link will be rooted at this place.
 	BaseURL() string
-
-	// URL returns the location of this resource.
 	URL() string
-
-	// Map returns the dynamic map with the content of this resource.
 	Map() map[string]interface{}
-
-	// StringField returns the named resource field if it exists and is
-	// set to a string value, or the empty string otherwise.
 	StringField(key string) string
-
-	// IntField returns the named resource field if it exists and is
-	// set to an int value, or zero otherwise.
 	IntField(key string) int
-
-	// FloatField returns the named resource field if it exists and is
-	// set to a float64 value, or zero otherwise.
 	FloatField(key string) float64
-
-	// BoolField returns the named resource field if it exists and is
-	// set to a bool value, or false otherwise.
 	BoolField(key string) bool
-
-	// SetField changes the named field with the provided value.
 	SetField(key string, value interface{})
-
-	// Location returns a new resource for a location which may be a
-	// full URL, or an absolute path (based on the resource's BaseURL),
-	// or a path relative to the resource itself (based on the
-	// resource's URL).
-	Location(url_ string) Resource
-
-	// GetLocation builds a resource with Location and calls Get(nil)
-	// on it.  It returns the loaded resource in case of success.
-	GetLocation(url_ string) (r Resource, err os.Error)
-
-	// Link calls Location with a URL available in the given key
-	// of the current resource's Map.  It returns an error if the
-	// requested key isn't found in the resource.  This is a convenient
-	// way to navigate through *_link values.
-	Link(key string) (r Resource, err os.Error)
-
-	// GetLink builds a resource with Link and calls Get(nil) on it.
-	// It returns the loaded resource in case of success.
-	GetLink(key string) (r Resource, err os.Error)
-
-	// Get issues an HTTP GET to retrieve the content of this resource.
-	// If params is not nil, it will provided as the query for the GET
-	// request.
+	Location(url_ string) *Value
+	GetLocation(url_ string) (v *Value, err os.Error)
+	Link(key string) (v *Value, err os.Error)
+	GetLink(key string) (v *Value, err os.Error)
 	Get(params Params) os.Error
-
-	// Post issues an HTTP POST to perform a given action at the URL
-	// specified by this resource.  If params is not nil, it will
-	// provided as the parameters for the POST request.
-	Post(params Params) (Resource, os.Error)
-
-	// Patch issues an HTTP PATCH request to modify the server resource
-	// with the local changes.
+	Post(params Params) (*Value, os.Error)
 	Patch() os.Error
-
-	// TotalSize returns the total number of entries in a collection.
 	TotalSize() int
-
-	// StartIndex returns the offset of the first resource in a collection.
 	StartIndex() int
-
-	// For iterates over every element in a collection and calls the
-	// provided function for each entry.  If the function returns a
-	// non-nil err value, the iteration will stop.  Watch out for
-	// very large collections!
-	For(func(r Resource) os.Error) os.Error
+	For(func(v *Value) os.Error) os.Error
 }
 
-type resource struct {
+// The Value type is the underlying dynamic layer used as the foundation of
+// all the more specific value types that support the Launchpad model.
+// Besides being used internally to implement these types, the methods of
+// this type also enable accessing new features available in Launchpad which
+// were not yet made available in lpad thorugh more convenient methods.
+type Value struct {
 	session *Session
 	baseurl string
 	url     string
@@ -127,68 +71,89 @@ type resource struct {
 	patch   map[string]interface{}
 }
 
-// NewResource creates a new resource type.  Creating resources explicitly
-// is generally not necessary.  If you're trying to access a location in
-// the Launchpad API which is not covered by the static model yet, see the
-// Link and Location methods on the Resource interface for more convenient
-// ways to create resources.
-func NewResource(session *Session, baseurl, url_ string, m map[string]interface{}) Resource {
-	return &resource{session, baseurl, url_, m, nil}
+// NewValue creates a new Value with the provided details. Creating values
+// explicitly is generally not necessary.  If you're trying to access a
+// location in the Launchpad API which is not covered by the supported
+// types yet, see the Link and Location methods on the Value type for more
+// convenient ways to create values.
+func NewValue(session *Session, baseurl, url_ string, m map[string]interface{}) *Value {
+	return &Value{session, baseurl, url_, m, nil}
 }
 
-func (r *resource) Session() *Session {
-	return r.session
+// IsValid returns true if the value is initialized and thus not nil. This
+// provided mainly as a convenience for all the types that embed a *Value.
+func (v *Value) IsValid() bool {
+	return v != nil
 }
 
-func (r *resource) BaseURL() string {
-	return r.baseurl
+// Session returns the session for the interaction with Launchpad.
+// This session is used to sign any requests delivered to Launchpad.
+func (v *Value) Session() *Session {
+	return v.session
 }
 
-func (r *resource) URL() string {
-	return r.url
+// BaseURL returns the URL the session is based on.  Absolute URLs
+// provided to Location and Link will be rooted at this place.
+func (v *Value) BaseURL() string {
+	return v.baseurl
 }
 
-func (r *resource) Map() map[string]interface{} {
-	if r.m == nil {
-		r.m = make(map[string]interface{})
+// URL returns the location of this value.
+func (v *Value) URL() string {
+	return v.url
+}
+
+// Map returns the dynamic map with the content of this value.
+func (v *Value) Map() map[string]interface{} {
+	if v.m == nil {
+		v.m = make(map[string]interface{})
 	}
-	return r.m
+	return v.m
 }
 
-func (r *resource) StringField(key string) string {
-	if v, ok := r.Map()[key].(string); ok {
+// StringField returns the named value field if it exists and is
+// set to a string value, or the empty string otherwise.
+func (v *Value) StringField(key string) string {
+	if v, ok := v.Map()[key].(string); ok {
 		return v
 	}
 	return ""
 }
 
-func (r *resource) IntField(key string) int {
-	if v, ok := r.Map()[key].(float64); ok {
+// IntField returns the named value field if it exists and is
+// set to an int value, or zero otherwise.
+func (v *Value) IntField(key string) int {
+	if v, ok := v.Map()[key].(float64); ok {
 		return int(v)
 	}
 	return 0
 }
 
-func (r *resource) FloatField(key string) float64 {
-	if v, ok := r.Map()[key].(float64); ok {
+// FloatField returns the named value field if it exists and is
+// set to a float64 value, or zero otherwise.
+func (v *Value) FloatField(key string) float64 {
+	if v, ok := v.Map()[key].(float64); ok {
 		return v
 	}
 	return 0
 }
 
-func (r *resource) BoolField(key string) bool {
-	if v, ok := r.Map()[key].(bool); ok {
+// BoolField returns the named value field if it exists and is
+// set to a bool value, or false otherwise.
+func (v *Value) BoolField(key string) bool {
+	if v, ok := v.Map()[key].(bool); ok {
 		return v
 	}
 	return false
 }
 
-func (r *resource) SetField(key string, value interface{}) {
-	if r.patch == nil {
-		r.patch = make(map[string]interface{})
+// SetField changes the named field with the provided value.
+func (v *Value) SetField(key string, value interface{}) {
+	if v.patch == nil {
+		v.patch = make(map[string]interface{})
 	}
-	p := r.patch
-	m := r.Map()
+	p := v.patch
+	m := v.Map()
 	var newv interface{}
 	switch v := value.(type) {
 	case int:
@@ -204,17 +169,17 @@ func (r *resource) SetField(key string, value interface{}) {
 	m[key] = newv
 }
 
-func (r *resource) join(part string) string {
+func (v *Value) join(part string) string {
 	if part == "" {
-		return r.url
+		return v.url
 	}
 	if strings.HasPrefix(part, "http://") || strings.HasPrefix(part, "https://") {
 		return part
 	}
-	base := r.baseurl
+	base := v.baseurl
 	if !strings.HasPrefix(part, "/") {
 		// Relative to URL.
-		base = r.url
+		base = v.url
 	}
 	url_, err := url.Parse(base)
 	if err != nil {
@@ -224,70 +189,96 @@ func (r *resource) join(part string) string {
 	return url_.String()
 }
 
-func (r *resource) Location(url_ string) Resource {
-	return &resource{session: r.session, baseurl: r.baseurl, url: r.join(url_)}
+// Location returns a new value for a location which may be a
+// full URL, or an absolute path (based on the value's BaseURL),
+// or a path relative to the value itself (based on the
+// value's URL).
+func (v *Value) Location(url_ string) *Value {
+	return &Value{session: v.session, baseurl: v.baseurl, url: v.join(url_)}
 }
 
-func (r *resource) Link(key string) (linkr Resource, err os.Error) {
-	location, ok := r.m[key].(string)
+// GetLocation builds a value with Location and calls Get(nil)
+// on it.  It returns the loaded value in case of success.
+func (v *Value) GetLocation(url_ string) (linkv *Value, err os.Error) {
+	linkv = v.Location(url_)
+	err = linkv.Get(nil)
+	if err != nil {
+		return nil, err
+	}
+	return linkv, nil
+}
+
+// Link calls Location with a URL available in the given key
+// of the current value's Map.  It returns an error if the
+// requested key isn't found in the value.  This is a convenient
+// way to navigate through *_link values.
+func (v *Value) Link(key string) (linkv *Value, err os.Error) {
+	location, ok := v.m[key].(string)
 	if !ok {
-		return nil, os.NewError(fmt.Sprintf("Field %q not found in resource", key))
+		return nil, os.NewError(fmt.Sprintf("Field %q not found in value", key))
 	}
-	return r.Location(location), nil
+	return v.Location(location), nil
 }
 
-func (r *resource) GetLocation(url_ string) (linkr Resource, err os.Error) {
-	linkr = r.Location(url_)
-	err = linkr.Get(nil)
+// GetLink builds a value with Link and calls Get(nil) on it.
+// It returns the loaded value in case of success.
+func (v *Value) GetLink(key string) (linkv *Value, err os.Error) {
+	linkv, err = v.Link(key)
 	if err != nil {
 		return nil, err
 	}
-	return linkr, nil
-}
-
-func (r *resource) GetLink(key string) (linkr Resource, err os.Error) {
-	linkr, err = r.Link(key)
+	err = linkv.Get(nil)
 	if err != nil {
 		return nil, err
 	}
-	err = linkr.Get(nil)
-	if err != nil {
-		return nil, err
-	}
-	return linkr, nil
+	return linkv, nil
 }
 
-func (r *resource) Get(params Params) os.Error {
-	_, err := r.do("GET", params, nil)
+// Get issues an HTTP GET to retrieve the content of this value.
+// If params is not nil, it will provided as the query for the GET
+// request.
+func (v *Value) Get(params Params) os.Error {
+	_, err := v.do("GET", params, nil)
 	return err
 }
 
-func (r *resource) Post(params Params) (other Resource, err os.Error) {
-	return r.do("POST", params, nil)
+// Post issues an HTTP POST to perform a given action at the URL
+// specified by this value.  If params is not nil, it will
+// provided as the parameters for the POST request.
+func (v *Value) Post(params Params) (other *Value, err os.Error) {
+	return v.do("POST", params, nil)
 }
 
-func (r *resource) Patch() os.Error {
-	data, err := json.Marshal(r.patch)
+// Patch issues an HTTP PATCH request to modify the server value
+// with the local changes.
+func (v *Value) Patch() os.Error {
+	data, err := json.Marshal(v.patch)
 	if err != nil {
 		return err
 	}
-	_, err = r.do("PATCH", nil, data)
+	_, err = v.do("PATCH", nil, data)
 	return err
 }
 
-func (r *resource) TotalSize() int {
-	return r.IntField("total_size")
+// TotalSize returns the total number of entries in a collection.
+func (v *Value) TotalSize() int {
+	return v.IntField("total_size")
 }
 
-func (r *resource) StartIndex() int {
-	return r.IntField("start")
+// StartIndex returns the offset of the first value in a collection.
+func (v *Value) StartIndex() int {
+	return v.IntField("start")
 }
 
-func (r *resource) For(f func(Resource) os.Error) os.Error {
+// For iterates over every element in a collection and calls the
+// provided function for each entry.  If the function returns a
+// non-nil err value, the iteration will stop.  Watch out for
+// very large collections!
+func (v *Value) For(f func(*Value) os.Error) os.Error {
 	for {
-		entries, ok := r.Map()["entries"].([]interface{})
+		entries, ok := v.Map()["entries"].([]interface{})
 		if !ok {
-			return os.NewError("No entries found in resource")
+			return os.NewError("No entries found in value")
 		}
 		for _, entry := range entries {
 			m, ok := entry.(map[string]interface{})
@@ -295,20 +286,20 @@ func (r *resource) For(f func(Resource) os.Error) os.Error {
 				continue
 			}
 			url_, _ := m["self_link"].(string)
-			err := f(&resource{session: r.session, baseurl: r.baseurl, url: url_, m: m})
+			err := f(&Value{session: v.session, baseurl: v.baseurl, url: url_, m: m})
 			if err != nil {
 				return err
 			}
 		}
-		nextr, _ := r.Link("next_collection_link")
-		if nextr == nil {
+		nextv, _ := v.Link("next_collection_link")
+		if nextv == nil {
 			break
 		}
-		err := nextr.Get(nil)
+		err := nextv.Get(nil)
 		if err != nil {
 			return err
 		}
-		r = nextr.(*resource)
+		v = nextv
 	}
 	return nil
 }
@@ -319,11 +310,11 @@ var httpClient = http.Client{
 	CheckRedirect: func(req *http.Request, via []*http.Request) os.Error { return stopRedir },
 }
 
-func (r *resource) do(method string, params Params, body []byte) (res *resource, err os.Error) {
-	res = r
+func (v *Value) do(method string, params Params, body []byte) (value *Value, err os.Error) {
+	value = v
 	query := multimap(params).Encode()
 	for redirect := 0; ; redirect++ {
-		req, err := http.NewRequest(method, res.url, nil)
+		req, err := http.NewRequest(method, value.url, nil)
 		req.Header["Accept"] = []string{"application/json"}
 		if err != nil {
 			return nil, err
@@ -348,8 +339,8 @@ func (r *resource) do(method string, params Params, body []byte) (res *resource,
 			req.ContentLength = int64(len(body))
 		}
 
-		if r.session != nil {
-			err := r.session.Sign(req)
+		if v.session != nil {
+			err := v.session.Sign(req)
 			if err != nil {
 				return nil, err
 			}
@@ -370,10 +361,10 @@ func (r *resource) do(method string, params Params, body []byte) (res *resource,
 		location := resp.Header.Get("Location")
 
 		if method == "POST" {
-			res = &resource{url: r.url, baseurl: r.baseurl, session: r.session}
+			value = &Value{url: v.url, baseurl: v.baseurl, session: v.session}
 			if resp.StatusCode == 201 && location != "" {
-				res.url = location
-				return res.do("GET", nil, nil)
+				value.url = location
+				return value.do("GET", nil, nil)
 			}
 		}
 
@@ -382,7 +373,7 @@ func (r *resource) do(method string, params Params, body []byte) (res *resource,
 				msg := "Got redirection status " + strconv.Itoa(resp.StatusCode) + " without a Location"
 				return nil, os.NewError(msg)
 			}
-			res.url = location
+			value.url = location
 			continue
 		}
 
@@ -402,8 +393,8 @@ func (r *resource) do(method string, params Params, body []byte) (res *resource,
 		if err != nil {
 			return nil, err
 		}
-		res.m = make(map[string]interface{})
-		return res, json.Unmarshal(body, &res.m)
+		value.m = make(map[string]interface{})
+		return value, json.Unmarshal(body, &value.m)
 	}
 
 	panic("unreachable")

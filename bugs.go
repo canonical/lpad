@@ -10,7 +10,7 @@ import (
 type BugStub struct {
 	Title           string   // Required
 	Description     string   // Required
-	Target          Resource // Project, source package, or distribution
+	Target          AnyValue // Project, source package, or distribution
 	Private         bool
 	SecurityRelated bool
 	Tags            []string
@@ -18,8 +18,8 @@ type BugStub struct {
 
 // CreateBug creates a new bug with an appropriate bug task and returns it.
 func (root Root) Bug(id int) (bug Bug, err os.Error) {
-	r, err := root.GetLocation("/bugs/" + strconv.Itoa(id))
-	return Bug{r}, err
+	v, err := root.GetLocation("/bugs/" + strconv.Itoa(id))
+	return Bug{v}, err
 }
 
 // CreateBug creates a new bug with an appropriate bug task and returns it.
@@ -39,13 +39,13 @@ func (root Root) CreateBug(stub *BugStub) (bug Bug, err os.Error) {
 	if stub.SecurityRelated {
 		params["security_related"] = "true"
 	}
-	r, err := root.Location("/bugs").Post(params)
-	return Bug{r}, err
+	v, err := root.Location("/bugs").Post(params)
+	return Bug{v}, err
 }
 
 // The Bug type represents a bug in Launchpad.
 type Bug struct {
-	Resource
+	*Value
 }
 
 // Id returns the bug numeric identifier (the bug # itself).
@@ -128,7 +128,7 @@ func (bug Bug) LinkBranch(branch Branch) os.Error {
 // A BugTask represents the association of a bug with a project
 // or source package, and the related information.
 type BugTask struct {
-	Resource
+	*Value
 }
 
 type Importance string
@@ -174,14 +174,14 @@ func (task BugTask) Importance() Importance {
 
 // Assignee returns the person currently assigned to work on the task.
 func (task BugTask) Assignee() (person Person, err os.Error) {
-	r, err := task.GetLink("assignee_link")
-	return Person{r}, err
+	v, err := task.GetLink("assignee_link")
+	return Person{v}, err
 }
 
 // Milestone returns the milestone the task is currently targeted at.
 func (task BugTask) Milestone() (ms Milestone, err os.Error) {
-	r, err := task.GetLink("milestone_link")
-	return Milestone{r}, err
+	v, err := task.GetLink("milestone_link")
+	return Milestone{v}, err
 }
 
 // SetStatus changes the current status for the bug task. See
@@ -208,21 +208,21 @@ func (task BugTask) SetMilestone(ms Milestone) {
 
 // BugTaskList represents a list of BugTasks for iteration.
 type BugTaskList struct {
-	Resource
+	*Value
 }
 
 // For iterates over the list of bug tasks and calls f for each one.
 // If f returns a non-nil error, iteration will stop and the error will
 // be returned as the result of For.
 func (list BugTaskList) For(f func(bt BugTask) os.Error) os.Error {
-	return list.Resource.For(func(r Resource) os.Error {
-		f(BugTask{r})
+	return list.Value.For(func(v *Value) os.Error {
+		f(BugTask{v})
 		return nil
 	})
 }
 
 // Tasks returns the list of bug tasks associated with the bug.
 func (bug Bug) Tasks() (list BugTaskList, err os.Error) {
-	r, err := bug.GetLink("bug_tasks_collection_link")
-	return BugTaskList{r}, err
+	v, err := bug.GetLink("bug_tasks_collection_link")
+	return BugTaskList{v}, err
 }

@@ -6,7 +6,7 @@ import (
 
 // The Blueprint type represents a blueprint in Launchpad.
 type Blueprint struct {
-	Resource
+	*Value
 }
 
 // Name returns the blueprint name. May contain lower-case letters, numbers,

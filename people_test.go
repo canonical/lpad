@@ -9,7 +9,7 @@ import (
 func (s *ModelS) TestRootMe(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{"display_name": "Joe"}`)
 
-	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
 
 	me, err := root.Me()
 	c.Assert(err, IsNil)
@@ -24,7 +24,7 @@ func (s *ModelS) TestRootPerson(c *C) {
 	testServer.PrepareResponse(200, jsonType, data)
 	testServer.PrepareResponse(200, jsonType, data)
 
-	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
 
 	person, err := root.Person("joe")
 	c.Assert(err, IsNil)
@@ -47,7 +47,7 @@ func (s *ModelS) TestRootTeam(c *C) {
 	testServer.PrepareResponse(200, jsonType, data)
 	testServer.PrepareResponse(200, jsonType, data)
 
-	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
 
 	team, err := root.Team("ensemble")
 	c.Assert(err, IsNil)
@@ -80,18 +80,18 @@ func (s *ModelS) TestRootFindMembers(c *C) {
 		}]
 	}`
 	testServer.PrepareResponse(200, jsonType, data)
-	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
 	list, err := root.FindMembers("someuser")
 	c.Assert(err, IsNil)
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(r lpad.Resource) os.Error {
-		if r.BoolField("is_team") {
-			t := r.(lpad.Team)
+	list.For(func(v lpad.AnyValue) os.Error {
+		if v.BoolField("is_team") {
+			t := v.(lpad.Team)
 			names = append(names, t.DisplayName())
 		} else {
-			p := r.(lpad.Person)
+			p := v.(lpad.Person)
 			names = append(names, p.DisplayName())
 		}
 		return nil
@@ -118,7 +118,7 @@ func (s *ModelS) TestRootFindPeople(c *C) {
 		}]
 	}`
 	testServer.PrepareResponse(200, jsonType, data)
-	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
 	list, err := root.FindPeople("someuser")
 	c.Assert(err, IsNil)
 	c.Assert(list.TotalSize(), Equals, 2)
@@ -152,7 +152,7 @@ func (s *ModelS) TestRootFindTeams(c *C) {
 		}]
 	}`
 	testServer.PrepareResponse(200, jsonType, data)
-	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
 	list, err := root.FindTeams("someuser")
 	c.Assert(err, IsNil)
 	c.Assert(list.TotalSize(), Equals, 2)
@@ -176,7 +176,7 @@ func (s *ModelS) TestPerson(c *C) {
 		"display_name": "Joe",
 		"web_link": "http://page",
 	}
-	person := lpad.Person{lpad.NewResource(nil, "", "", m)}
+	person := lpad.Person{lpad.NewValue(nil, "", "", m)}
 	c.Assert(person.DisplayName(), Equals, "Joe")
 	c.Assert(person.WebPage(), Equals, "http://page")
 	person.SetDisplayName("Name")
@@ -189,7 +189,7 @@ func (s *ModelS) TestTeam(c *C) {
 		"display_name": "My Team",
 		"web_link": "http://page",
 	}
-	team := lpad.Team{lpad.NewResource(nil, "", "", m)}
+	team := lpad.Team{lpad.NewValue(nil, "", "", m)}
 	c.Assert(team.Name(), Equals, "myteam")
 	c.Assert(team.DisplayName(), Equals, "My Team")
 	c.Assert(team.WebPage(), Equals, "http://page")
@@ -209,13 +209,13 @@ func (s *ModelS) TestIRCNick(c *C) {
 		"network":            "irc.canonical.com",
 		"http_etag":          "\"the-etag\"",
 	}
-	nick := lpad.IRCNick{lpad.NewResource(nil, "", "", m)}
+	nick := lpad.IRCNick{lpad.NewValue(nil, "", "", m)}
 	c.Assert(nick.Nick(), Equals, "canonical-nick")
 	c.Assert(nick.Network(), Equals, "irc.canonical.com")
 }
 
 func (s *ModelS) TestIRCNickChange(c *C) {
-	nick := lpad.IRCNick{lpad.NewResource(nil, "", "", nil)}
+	nick := lpad.IRCNick{lpad.NewValue(nil, "", "", nil)}
 	nick.SetNick("mynick")
 	nick.SetNetwork("mynetwork")
 	c.Assert(nick.Nick(), Equals, "mynick")
@@ -249,7 +249,7 @@ func (s *ModelS) TestPersonNicks(c *C) {
 		"resource_type_link": "https://api.launchpad.net/1.0/#irc_id-page-resource"
 	}`
 	testServer.PrepareResponse(200, jsonType, data)
-	person := lpad.Person{lpad.NewResource(nil, "", "", m)}
+	person := lpad.Person{lpad.NewValue(nil, "", "", m)}
 	nicks, err := person.IRCNicks()
 	c.Assert(err, IsNil)
 	c.Assert(len(nicks), Equals, 2)

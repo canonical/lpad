@@ -19,8 +19,8 @@ func main() {
 	check(err)
 	fmt.Println(me.DisplayName())
 
-	r, err := root.GetLocation("/bugs/123456")
-	fmt.Printf("%#v\n", r.Map())
+	v, err := root.GetLocation("/bugs/123456")
+	fmt.Printf("%#v\n", v.Map())
 
 	//check(err)
 //
@@ -59,8 +59,8 @@ func main() {
 	//check(err)
 	//println(langs.ListSize())
 	//check(err)
-	//err = langs.ListIter(func(r lpad.Resource) os.Error {
-	//	fmt.Printf("Entry: %#v\n", r.Map())
+	//err = langs.ListIter(func(v *lpad.Value) os.Error {
+	//	fmt.Printf("Entry: %#v\n", v.Map())
 	//	return nil
 	//})
 	//check(err)

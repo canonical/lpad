@@ -7,7 +7,7 @@ import (
 
 // The Root type provides the entrance for the Launchpad API.
 type Root struct {
-	Resource
+	*Value
 }
 
 // Me returns the Person authenticated into Lauchpad in the current session.
@@ -18,32 +18,32 @@ func (root Root) Me() (p Person, err os.Error) {
 
 // Person returns the Person with the provided username.
 func (root Root) Person(username string) (p Person, err os.Error) {
-	r, err := root.GetLocation("/~" + url.QueryEscape(username))
-	if err == nil && r.BoolField("is_team") {
+	v, err := root.GetLocation("/~" + url.QueryEscape(username))
+	if err == nil && v.BoolField("is_team") {
 		err = os.NewError(username + " is a team, not a person")
 	}
-	return Person{r}, err
+	return Person{v}, err
 }
 
 // Team returns the Team with the provided name.
 func (root Root) Team(name string) (p Team, err os.Error) {
-	r, err := root.GetLocation("/~" + url.QueryEscape(name))
-	if err == nil && !r.BoolField("is_team") {
+	v, err := root.GetLocation("/~" + url.QueryEscape(name))
+	if err == nil && !v.BoolField("is_team") {
 		err = os.NewError(name + " is not a team")
 	}
-	return Team{r}, err
+	return Team{v}, err
 }
 
 // Member returns the Team or Person with the provided name or username.
-func (root Root) Member(name string) (p Resource, err os.Error) {
-	r, err := root.GetLocation("/~" + url.QueryEscape(name))
+func (root Root) Member(name string) (member AnyValue, err os.Error) {
+	v, err := root.GetLocation("/~" + url.QueryEscape(name))
 	if err != nil {
 		return nil, err
 	}
-	if r.BoolField("is_team") {
-		return Team{r}, nil
+	if v.BoolField("is_team") {
+		return Team{v}, nil
 	}
-	return Person{r}, nil
+	return Person{v}, nil
 }
 
 // FindPeople returns a PersonList containing all Person accounts whose
@@ -73,18 +73,18 @@ func (root Root) FindMembers(text string) (list MemberList, err os.Error) {
 // The MemberList type encapsulates a mixed list containing Person and Team
 // elements for iteration.
 type MemberList struct {
-	Resource
+	*Value
 }
 
 // For iterates over the list of people and teams and calls f for each one.
 // If f returns a non-nil error, iteration will stop and the error will be
 // returned as the result of For.
-func (list MemberList) For(f func(r Resource) os.Error) os.Error {
-	return list.Resource.For(func(r Resource) os.Error {
-		if r.BoolField("is_team") {
-			f(Team{r})
+func (list MemberList) For(f func(v AnyValue) os.Error) os.Error {
+	return list.Value.For(func(v *Value) os.Error {
+		if v.BoolField("is_team") {
+			f(Team{v})
 		} else {
-			f(Person{r})
+			f(Person{v})
 		}
 		return nil
 	})
@@ -92,37 +92,37 @@ func (list MemberList) For(f func(r Resource) os.Error) os.Error {
 
 // The PersonList type encapsulates a list of Person elements for iteration.
 type PersonList struct {
-	Resource
+	*Value
 }
 
 // For iterates over the list of people and calls f for each one.  If f
 // returns a non-nil error, iteration will stop and the error will be
 // returned as the result of For.
 func (list PersonList) For(f func(p Person) os.Error) os.Error {
-	return list.Resource.For(func(r Resource) os.Error {
-		f(Person{r})
+	return list.Value.For(func(v *Value) os.Error {
+		f(Person{v})
 		return nil
 	})
 }
 
 // The TeamList type encapsulates a list of Team elements for iteration.
 type TeamList struct {
-	Resource
+	*Value
 }
 
 // For iterates over the list of teams and calls f for each one.  If f
 // returns a non-nil error, iteration will stop and the error will be
 // returned as the result of For.
 func (list TeamList) For(f func(t Team) os.Error) os.Error {
-	return list.Resource.For(func(r Resource) os.Error {
-		f(Team{r})
+	return list.Value.For(func(v *Value) os.Error {
+		f(Team{v})
 		return nil
 	})
 }
 
 // The Person type represents a person in Launchpad.
 type Person struct {
-	Resource
+	*Value
 }
 
 // DisplayName returns the person's name as it would be displayed
@@ -149,15 +149,15 @@ func (person Person) IRCNicks() (nicks []IRCNick, err os.Error) {
 	if err != nil {
 		return nil, err
 	}
-	list.For(func(r Resource) os.Error {
-		nicks = append(nicks, IRCNick{r})
+	list.For(func(v *Value) os.Error {
+		nicks = append(nicks, IRCNick{v})
 		return nil
 	})
 	return
 }
 
 type IRCNick struct {
-	Resource
+	*Value
 }
 
 // Nick returns the person's nick on an IRC network.
@@ -184,7 +184,7 @@ func (nick IRCNick) SetNetwork(n string) {
 
 // The Team type encapsulates access to details about a team in Launchpad.
 type Team struct {
-	Resource
+	*Value
 }
 
 // Name returns the team's name.  This is a short unique name, beginning with a

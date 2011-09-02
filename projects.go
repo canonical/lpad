@@ -13,7 +13,7 @@ func (root Root) Project(name string) (project Project, err os.Error) {
 
 // The Project type represents a project in Launchpad.
 type Project struct {
-	Resource
+	*Value
 }
 
 // Name returns the project name, which is composed of at least one
@@ -113,7 +113,7 @@ func (p Project) FocusSeries() (series Series, err os.Error) {
 
 // The Milestone type represents a milestone associated with a project.
 type Milestone struct {
-	Resource
+	*Value
 }
 
 // Name returns the milestone name, which consists of only
@@ -186,14 +186,14 @@ func (ms Milestone) SetDate(date string) {
 
 // The MilestoneList represents a list of project milestones.
 type MilestoneList struct {
-	Resource
+	*Value
 }
 
 // For iterates over the list of milestones and calls f for each one.
 // If f returns a non-nil error, iteration will stop and the error will
 // be returned as the result of For.
 func (list MilestoneList) For(f func(m Milestone) os.Error) os.Error {
-	return list.Resource.For(func(r Resource) os.Error {
+	return list.Value.For(func(r *Value) os.Error {
 		f(Milestone{r})
 		return nil
 	})
@@ -201,7 +201,7 @@ func (list MilestoneList) For(f func(m Milestone) os.Error) os.Error {
 
 // The Series type represents a series associated with a project.
 type Series struct {
-	Resource
+	*Value
 }
 
 // Name returns the series name, which is a unique name that identifies
@@ -265,14 +265,14 @@ func (s Series) SetBranch(branch Branch) {
 
 // The SeriesList represents a list of project series.
 type SeriesList struct {
-	Resource
+	*Value
 }
 
 // For iterates over the list of series and calls f for each one.
 // If f returns a non-nil error, iteration will stop and the error will
 // be returned as the result of For.
 func (list SeriesList) For(f func(s Series) os.Error) os.Error {
-	return list.Resource.For(func(r Resource) os.Error {
+	return list.Value.For(func(r *Value) os.Error {
 		f(Series{r})
 		return nil
 	})

@@ -10,7 +10,7 @@ func (s *ModelS) TestBranch(c *C) {
 		"bzr_identity": "lp:~joe/ensemble",
 		"unique_name":  "lp:~joe/ensemble/some-branch",
 	}
-	branch := lpad.Branch{lpad.NewResource(nil, "", "", m)}
+	branch := lpad.Branch{lpad.NewValue(nil, "", "", m)}
 	c.Assert(branch.Id(), Equals, "lp:~joe/ensemble")
 	c.Assert(branch.UniqueName(), Equals, "lp:~joe/ensemble/some-branch")
 }
@@ -19,7 +19,7 @@ func (s *ModelS) TestRootBranch(c *C) {
 	data := `{"unique_name": "lp:branch"}`
 	testServer.PrepareResponse(200, jsonType, data)
 
-	root := lpad.Root{lpad.NewResource(nil, testServer.URL, "", nil)}
+	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
 
 	branch, err := root.Branch("lp:~joe/project/branch-name")
 	c.Assert(err, IsNil)
@@ -42,7 +42,7 @@ func (s *ModelS) TestMergeProposal(c *C) {
 		"target_branch_link": testServer.URL + "/target_link",
 		"source_branch_link": testServer.URL + "/source_link",
 	}
-	mp := lpad.MergeProposal{lpad.NewResource(nil, "", "", m)}
+	mp := lpad.MergeProposal{lpad.NewValue(nil, "", "", m)}
 	c.Assert(mp.Description(), Equals, "Description")
 	c.Assert(mp.CommitMessage(), Equals, "Commit message")
 	c.Assert(mp.Status(), Equals, "Needs review")
@@ -81,8 +81,8 @@ func (s *ModelS) TestMergeProposal(c *C) {
 func (s *ModelS) TestBranchProposeMerge(c *C) {
 	data := `{"description": "Description"}`
 	testServer.PrepareResponse(200, jsonType, data)
-	branch := lpad.Branch{lpad.NewResource(nil, testServer.URL, testServer.URL + "/~joe/ensemble/some-branch", nil)}
-	target := lpad.Branch{lpad.NewResource(nil, testServer.URL, testServer.URL + "/~ensemble/ensemble/trunk", nil)}
+	branch := lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL + "/~joe/ensemble/some-branch", nil)}
+	target := lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL + "/~ensemble/ensemble/trunk", nil)}
 
 	stub := lpad.MergeStub{
 		Description: "Description",
@@ -107,9 +107,9 @@ func (s *ModelS) TestBranchProposeMerge(c *C) {
 func (s *ModelS) TestBranchProposeMergePreReq(c *C) {
 	data := `{"description": "Description"}`
 	testServer.PrepareResponse(200, jsonType, data)
-	branch := lpad.Branch{lpad.NewResource(nil, testServer.URL, testServer.URL + "/~joe/ensemble/some-branch", nil)}
-	target := lpad.Branch{lpad.NewResource(nil, testServer.URL, testServer.URL + "~ensemble/ensemble/trunk", nil)}
-	prereq := lpad.Branch{lpad.NewResource(nil, testServer.URL, testServer.URL + "~ensemble/ensemble/prereq", nil)}
+	branch := lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL + "/~joe/ensemble/some-branch", nil)}
+	target := lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL + "~ensemble/ensemble/trunk", nil)}
+	prereq := lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL + "~ensemble/ensemble/prereq", nil)}
 
 	stub := lpad.MergeStub{
 		Target: target,

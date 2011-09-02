@@ -71,5 +71,5 @@ func Login(baseurl string, auth Auth) (root Root, err os.Error) {
 	if err != nil {
 		return
 	}
-	return Root{&resource{session: NewSession(auth), baseurl: baseurl, url: baseurl}}, nil
+	return Root{&Value{session: NewSession(auth), baseurl: baseurl, url: baseurl}}, nil
 }

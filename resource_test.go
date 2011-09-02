@@ -2,7 +2,6 @@ package lpad_test
 
 import (
 	"fmt"
-
 	"json"
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
@@ -11,14 +10,14 @@ import (
 	"url"
 )
 
-var _ = Suite(&ResS{})
-var _ = Suite(&ResI{})
+var _ = Suite(&ValueS{})
+var _ = Suite(&ValueI{})
 
-type ResS struct {
+type ValueS struct {
 	HTTPSuite
 }
 
-type ResI struct {
+type ValueI struct {
 	SuiteI
 }
 
@@ -26,243 +25,250 @@ var jsonType = map[string]string{
 	"Content-Type": "application/json",
 }
 
-func (s *ResS) TestMapInit(c *C) {
-	r := lpad.NewResource(nil, "", "", nil)
-	m := r.Map()
-	c.Assert(m, NotNil)
-	m["a"] = 1
-	c.Assert(r.Map()["a"], Equals, 1)
+func (s *ValueS) TestIsValid(c *C) {
+	var v *lpad.Value
+	c.Assert(v.IsValid(), Equals, false)
+	v = lpad.NewValue(nil, "", "", nil)
+	c.Assert(v.IsValid(), Equals, true)
 }
 
-func (s *ResS) TestFieldMethods(c *C) {
+func (s *ValueS) TestMapInit(c *C) {
+	v := lpad.NewValue(nil, "", "", nil)
+	m := v.Map()
+	c.Assert(m, NotNil)
+	m["a"] = 1
+	c.Assert(v.Map()["a"], Equals, 1)
+}
+
+func (s *ValueS) TestFieldMethods(c *C) {
 	m := M{
 		"n": nil,
 		"s": "string",
 		"f": 42.1,
 		"b": true,
 	}
-	r := lpad.NewResource(nil, "", "", m)
-	c.Assert(r.StringField("s"), Equals, "string")
-	c.Assert(r.StringField("n"), Equals, "")
-	c.Assert(r.StringField("x"), Equals, "")
-	c.Assert(r.IntField("f"), Equals, 42)
-	c.Assert(r.IntField("n"), Equals, 0)
-	c.Assert(r.IntField("x"), Equals, 0)
-	c.Assert(r.FloatField("f"), Equals, 42.1)
-	c.Assert(r.FloatField("n"), Equals, 0.0)
-	c.Assert(r.FloatField("x"), Equals, 0.0)
-	c.Assert(r.BoolField("b"), Equals, true)
-	c.Assert(r.BoolField("n"), Equals, false)
-	c.Assert(r.BoolField("x"), Equals, false)
+	v := lpad.NewValue(nil, "", "", m)
+	c.Assert(v.StringField("s"), Equals, "string")
+	c.Assert(v.StringField("n"), Equals, "")
+	c.Assert(v.StringField("x"), Equals, "")
+	c.Assert(v.IntField("f"), Equals, 42)
+	c.Assert(v.IntField("n"), Equals, 0)
+	c.Assert(v.IntField("x"), Equals, 0)
+	c.Assert(v.FloatField("f"), Equals, 42.1)
+	c.Assert(v.FloatField("n"), Equals, 0.0)
+	c.Assert(v.FloatField("x"), Equals, 0.0)
+	c.Assert(v.BoolField("b"), Equals, true)
+	c.Assert(v.BoolField("n"), Equals, false)
+	c.Assert(v.BoolField("x"), Equals, false)
 }
 
-func (s *ResS) TestGet(c *C) {
+func (s *ValueS) TestGet(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{"a": 1, "b": [1, 2]}`)
-	r := lpad.NewResource(nil, "", testServer.URL+"/myresource", nil)
-	err := r.Get(nil)
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	err := v.Get(nil)
 	c.Assert(err, IsNil)
-	c.Assert(r.Map()["a"], Equals, float64(1))
-	c.Assert(r.Map()["b"], Equals, []interface{}{float64(1), float64(2)})
+	c.Assert(v.Map()["a"], Equals, float64(1))
+	c.Assert(v.Map()["b"], Equals, []interface{}{float64(1), float64(2)})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
-	c.Assert(req.URL.Path, Equals, "/myresource")
+	c.Assert(req.URL.Path, Equals, "/myvalue")
 	c.Assert(req.Header.Get("Accept"), Equals, "application/json")
 }
 
-func (s *ResS) TestGetWithParams(c *C) {
+func (s *ValueS) TestGetWithParams(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
-	r := lpad.NewResource(nil, "", testServer.URL+"/myresource", nil)
-	err := r.Get(lpad.Params{"k": "v"})
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	err := v.Get(lpad.Params{"k": "v"})
 	c.Assert(err, IsNil)
-	c.Assert(r.Map()["ok"], Equals, true)
+	c.Assert(v.Map()["ok"], Equals, true)
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
-	c.Assert(req.URL.Path, Equals, "/myresource")
+	c.Assert(req.URL.Path, Equals, "/myvalue")
 	c.Assert(req.URL.RawQuery, Equals, "k=v")
 }
 
-func (s *ResS) TestGetWithParamsMerging(c *C) {
+func (s *ValueS) TestGetWithParamsMerging(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
-	r := lpad.NewResource(nil, "", testServer.URL+"/myresource?k2=v2", nil)
-	err := r.Get(lpad.Params{"k1": "v1"})
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue?k2=v2", nil)
+	err := v.Get(lpad.Params{"k1": "v1"})
 	c.Assert(err, IsNil)
-	c.Assert(r.Map()["ok"], Equals, true)
+	c.Assert(v.Map()["ok"], Equals, true)
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
-	c.Assert(req.URL.Path, Equals, "/myresource")
+	c.Assert(req.URL.Path, Equals, "/myvalue")
 	params, err := url.ParseQuery(req.URL.RawQuery)
 	c.Assert(err, IsNil)
 	c.Assert(params["k1"], Equals, []string{"v1"})
 	c.Assert(params["k2"], Equals, []string{"v2"})
 }
 
-func (s *ResS) TestGetSign(c *C) {
+func (s *ValueS) TestGetSign(c *C) {
 	oauth := &lpad.OAuth{Token: "mytoken", TokenSecret: "mytokensecret"}
 	session := lpad.NewSession(oauth)
 
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
-	r := lpad.NewResource(session, "", testServer.URL+"/myresource", nil)
-	err := r.Get(nil)
+	v := lpad.NewValue(session, "", testServer.URL+"/myvalue", nil)
+	err := v.Get(nil)
 	c.Assert(err, IsNil)
-	c.Assert(r.Map()["ok"], Equals, true)
+	c.Assert(v.Map()["ok"], Equals, true)
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
-	c.Assert(req.URL.Path, Equals, "/myresource")
+	c.Assert(req.URL.Path, Equals, "/myvalue")
 	c.Assert(req.Header["Authorization"], NotNil)
 	c.Assert(req.Header["Authorization"][0], Matches, "OAuth.*")
 }
 
-func (s *ResS) TestGetRedirect(c *C) {
+func (s *ValueS) TestGetRedirect(c *C) {
 	headers := map[string]string{
-		"Location": testServer.URL + "/myotherresource",
+		"Location": testServer.URL + "/myothervalue",
 	}
 	testServer.PrepareResponse(303, headers, "")
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
-	r := lpad.NewResource(nil, "", testServer.URL+"/myresource", nil)
-	err := r.Get(nil)
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	err := v.Get(nil)
 	c.Assert(err, IsNil)
-	c.Assert(r.URL(), Equals, testServer.URL+"/myotherresource")
-	c.Assert(r.Map()["ok"], Equals, true)
+	c.Assert(v.URL(), Equals, testServer.URL+"/myothervalue")
+	c.Assert(v.Map()["ok"], Equals, true)
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
-	c.Assert(req.URL.Path, Equals, "/myresource")
+	c.Assert(req.URL.Path, Equals, "/myvalue")
 }
 
-func (s *ResS) TestGetNonJSONContent(c *C) {
+func (s *ValueS) TestGetNonJSONContent(c *C) {
 	headers := map[string]string{
 		"Content-Type": "text/plain",
 	}
 	testServer.PrepareResponse(200, headers, "NOT JSON")
-	r := lpad.NewResource(nil, "", testServer.URL+"/myresource", nil)
-	err := r.Get(nil)
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	err := v.Get(nil)
 	c.Assert(err, Matches, "Non-JSON content-type: text/plain.*")
 }
 
-func (s *ResS) TestGetError(c *C) {
+func (s *ValueS) TestGetError(c *C) {
 	testServer.PrepareResponse(500, jsonType, `{"what": "ever"}`)
-	r := lpad.NewResource(nil, "", testServer.URL+"/myresource", nil)
-	err := r.Get(nil)
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	err := v.Get(nil)
 	c.Assert(err, Matches, `Server returned 500 and body: {"what": "ever"}`)
 
 	testServer.PrepareResponse(404, jsonType, "")
-	r = lpad.NewResource(nil, "", testServer.URL+"/myresource", nil)
-	err = r.Get(nil)
+	v = lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	err = v.Get(nil)
 	c.Assert(err, Matches, `Server returned 404 and no body.`)
 }
 
-func (s *ResS) TestGetRedirectWithoutLocation(c *C) {
+func (s *ValueS) TestGetRedirectWithoutLocation(c *C) {
 	headers := map[string]string{
 		"Content-Type": "application/json", // Should be ignored.
 	}
 	testServer.PrepareResponse(303, headers, `{"ok": true}`)
-	r := lpad.NewResource(nil, "", testServer.URL+"/myresource", nil)
-	err := r.Get(nil)
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	err := v.Get(nil)
 	c.Assert(err, Matches, "Get : 303 response missing Location header")
 }
 
-func (s *ResS) TestPost(c *C) {
+func (s *ValueS) TestPost(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
-	r := lpad.NewResource(nil, "", testServer.URL+"/myresource", nil)
-	other, err := r.Post(nil)
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	other, err := v.Post(nil)
 	c.Assert(err, IsNil)
-	c.Assert(r.Map(), Equals, map[string]interface{}{})
+	c.Assert(v.Map(), Equals, map[string]interface{}{})
 	c.Assert(other.Map()["ok"], Equals, true)
-	c.Assert(other.URL(), Equals, r.URL())
+	c.Assert(other.URL(), Equals, v.URL())
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
-	c.Assert(req.URL.Path, Equals, "/myresource")
+	c.Assert(req.URL.Path, Equals, "/myvalue")
 }
 
-func (s *ResS) TestPostWithParams(c *C) {
+func (s *ValueS) TestPostWithParams(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
-	r := lpad.NewResource(nil, "", testServer.URL+"/myresource", nil)
-	_, err := r.Post(lpad.Params{"k": "v"})
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	_, err := v.Post(lpad.Params{"k": "v"})
 	c.Assert(err, IsNil)
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
-	c.Assert(req.URL.Path, Equals, "/myresource")
+	c.Assert(req.URL.Path, Equals, "/myvalue")
 	c.Assert(req.Form["k"], Equals, []string{"v"})
 }
 
-func (s *ResS) TestPostCreation(c *C) {
+func (s *ValueS) TestPostCreation(c *C) {
 	headers := map[string]string{
-		"Location":     testServer.URL + "/newresource",
+		"Location":     testServer.URL + "/newvalue",
 		"Content-Type": "application/json", // Should be ignored.
 	}
 	testServer.PrepareResponse(201, headers, `{"ok": false}`)
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
 
-	r := lpad.NewResource(nil, testServer.URL, testServer.URL+"/myresource", nil)
-	other, err := r.Post(nil)
+	v := lpad.NewValue(nil, testServer.URL, testServer.URL+"/myvalue", nil)
+	other, err := v.Post(nil)
 	c.Assert(err, IsNil)
-	c.Assert(len(r.Map()), Equals, 0)
+	c.Assert(len(v.Map()), Equals, 0)
 	c.Assert(other.BaseURL(), Equals, testServer.URL)
-	c.Assert(other.URL(), Equals, testServer.URL+"/newresource")
+	c.Assert(other.URL(), Equals, testServer.URL+"/newvalue")
 	c.Assert(other.Map()["ok"], Equals, true)
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
-	c.Assert(req.URL.Path, Equals, "/myresource")
+	c.Assert(req.URL.Path, Equals, "/myvalue")
 
 	req = testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
-	c.Assert(req.URL.Path, Equals, "/newresource")
+	c.Assert(req.URL.Path, Equals, "/newvalue")
 	c.Assert(len(req.Form), Equals, 0)
 }
 
-func (s *ResS) TestPostSign(c *C) {
+func (s *ValueS) TestPostSign(c *C) {
 	oauth := &lpad.OAuth{Token: "mytoken", TokenSecret: "mytokensecret"}
 	session := lpad.NewSession(oauth)
 
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
-	r := lpad.NewResource(session, "", testServer.URL+"/myresource", nil)
-	other, err := r.Post(nil)
+	v := lpad.NewValue(session, "", testServer.URL+"/myvalue", nil)
+	other, err := v.Post(nil)
 	c.Assert(err, IsNil)
-	c.Assert(len(r.Map()), Equals, 0)
+	c.Assert(len(v.Map()), Equals, 0)
 	c.Assert(other.Map()["ok"], Equals, true)
-	c.Assert(other.URL(), Equals, r.URL())
-	c.Assert(other.Session(), Equals, r.Session())
+	c.Assert(other.URL(), Equals, v.URL())
+	c.Assert(other.Session(), Equals, v.Session())
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
-	c.Assert(req.URL.Path, Equals, "/myresource")
+	c.Assert(req.URL.Path, Equals, "/myvalue")
 	c.Assert(req.Header["Authorization"], NotNil)
 	c.Assert(req.Header["Authorization"][0], Matches, "OAuth.*")
 }
 
-func (s *ResS) TestPatch(c *C) {
+func (s *ValueS) TestPatch(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{"a": 1, "b": 2}`)
 	testServer.PrepareResponse(200, nil, "")
 
-	r := lpad.NewResource(nil, "", testServer.URL+"/myresource", nil)
-	err := r.Get(nil)
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	err := v.Get(nil)
 	c.Assert(err, IsNil)
 
-	r.SetField("a", 3)
-	r.SetField("c", "string")
-	r.SetField("d", true)
-	c.Assert(r.Map()["a"], Equals, 3.0)
-	c.Assert(r.Map()["b"], Equals, 2.0)
-	c.Assert(r.Map()["c"], Equals, "string")
-	c.Assert(r.Map()["d"], Equals, true)
+	v.SetField("a", 3)
+	v.SetField("c", "string")
+	v.SetField("d", true)
+	c.Assert(v.Map()["a"], Equals, 3.0)
+	c.Assert(v.Map()["b"], Equals, 2.0)
+	c.Assert(v.Map()["c"], Equals, "string")
+	c.Assert(v.Map()["d"], Equals, true)
 
-	err = r.Patch()
+	err = v.Patch()
 	c.Assert(err, IsNil)
 
 	req1 := testServer.WaitRequest()
 	c.Assert(req1.Method, Equals, "GET")
-	c.Assert(req1.URL.Path, Equals, "/myresource")
+	c.Assert(req1.URL.Path, Equals, "/myvalue")
 
 	req2 := testServer.WaitRequest()
 	c.Assert(req2.Method, Equals, "PATCH")
-	c.Assert(req2.URL.Path, Equals, "/myresource")
+	c.Assert(req2.URL.Path, Equals, "/myvalue")
 	c.Assert(req2.Header.Get("Accept"), Equals, "application/json")
 	c.Assert(req2.Header.Get("Content-Type"), Equals, "application/json")
 
@@ -272,27 +278,27 @@ func (s *ResS) TestPatch(c *C) {
 	c.Assert(m, Equals, M{"a": 3.0, "c": "string", "d": true})
 }
 
-func (s *ResS) TestPatchWithContent(c *C) {
+func (s *ValueS) TestPatchWithContent(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{"a": 1, "b": 2}`)
 	testServer.PrepareResponse(209, jsonType, `{"new": "content"}`)
 
-	r := lpad.NewResource(nil, "", testServer.URL+"/myresource", nil)
-	err := r.Get(nil)
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	err := v.Get(nil)
 	c.Assert(err, IsNil)
 
-	r.SetField("a", 3)
+	v.SetField("a", 3)
 
-	err = r.Patch()
+	err = v.Patch()
 	c.Assert(err, IsNil)
-	c.Assert(r.Map(), Equals, map[string]interface{}{"new": "content"})
+	c.Assert(v.Map(), Equals, map[string]interface{}{"new": "content"})
 
 	req1 := testServer.WaitRequest()
 	c.Assert(req1.Method, Equals, "GET")
-	c.Assert(req1.URL.Path, Equals, "/myresource")
+	c.Assert(req1.URL.Path, Equals, "/myvalue")
 
 	req2 := testServer.WaitRequest()
 	c.Assert(req2.Method, Equals, "PATCH")
-	c.Assert(req2.URL.Path, Equals, "/myresource")
+	c.Assert(req2.URL.Path, Equals, "/myvalue")
 	c.Assert(req2.Header.Get("Accept"), Equals, "application/json")
 	c.Assert(req2.Header.Get("Content-Type"), Equals, "application/json")
 
@@ -313,12 +319,12 @@ var locationTests = []locationTest{
 	{"http://e.c/base", "http://e.c/base/more/foo", "/bar", "http://e.c/base/bar"},
 }
 
-func (s *ResS) TestLocation(c *C) {
+func (s *ValueS) TestLocation(c *C) {
 	oauth := &lpad.OAuth{Token: "mytoken", TokenSecret: "mytokensecret"}
 	session := lpad.NewSession(oauth)
 
 	for _, test := range locationTests {
-		r1 := lpad.NewResource(session, test.BaseURL, test.URL, nil)
+		r1 := lpad.NewValue(session, test.BaseURL, test.URL, nil)
 		r2 := r1.Location(test.Location)
 		c.Assert(r2.URL(), Equals, test.Result)
 		c.Assert(r2.BaseURL(), Equals, test.BaseURL)
@@ -326,45 +332,45 @@ func (s *ResS) TestLocation(c *C) {
 	}
 }
 
-func (s *ResS) TestLink(c *C) {
+func (s *ValueS) TestLink(c *C) {
 	oauth := &lpad.OAuth{Token: "mytoken", TokenSecret: "mytokensecret"}
 	session := lpad.NewSession(oauth)
 
 	for _, test := range locationTests {
 		m := map[string]interface{}{"some_link": test.Location}
-		r1 := lpad.NewResource(session, test.BaseURL, test.URL, m)
-		r2, err := r1.Link("some_link")
+		v1 := lpad.NewValue(session, test.BaseURL, test.URL, m)
+		v2, err := v1.Link("some_link")
 		c.Assert(err, IsNil)
-		c.Assert(r2.URL(), Equals, test.Result)
-		c.Assert(r2.BaseURL(), Equals, test.BaseURL)
-		c.Assert(r2.Session(), Equals, session)
+		c.Assert(v2.URL(), Equals, test.Result)
+		c.Assert(v2.BaseURL(), Equals, test.BaseURL)
+		c.Assert(v2.Session(), Equals, session)
 
-		r3, err := r1.Link("bad_link")
-		c.Assert(err, Matches, `Field "bad_link" not found in resource`)
-		c.Assert(r3, Equals, nil)
+		v3, err := v1.Link("bad_link")
+		c.Assert(err, Matches, `Field "bad_link" not found in value`)
+		c.Assert(v3, IsNil)
 	}
 }
 
-func (s *ResS) TestGetLocation(c *C) {
+func (s *ValueS) TestGetLocation(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
-	r := lpad.NewResource(nil, "", "", nil)
-	other, err := r.GetLocation(testServer.URL + "/link")
+	v := lpad.NewValue(nil, "", "", nil)
+	other, err := v.GetLocation(testServer.URL + "/link")
 	c.Assert(err, IsNil)
 	c.Assert(other.Map()["ok"], Equals, true)
 }
 
-func (s *ResS) TestGetLink(c *C) {
+func (s *ValueS) TestGetLink(c *C) {
 	m := M{
 		"some_link": testServer.URL + "/link",
 	}
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
-	r := lpad.NewResource(nil, "", "", m)
-	other, err := r.GetLink("some_link")
+	v := lpad.NewValue(nil, "", "", m)
+	other, err := v.GetLink("some_link")
 	c.Assert(err, IsNil)
 	c.Assert(other.Map()["ok"], Equals, true)
 }
 
-func (s *ResS) TestCollection(c *C) {
+func (s *ValueS) TestCollection(c *C) {
 	data0 := `{
 		"total_size": 5,
 		"start": 1,
@@ -379,17 +385,17 @@ func (s *ResS) TestCollection(c *C) {
 	testServer.PrepareResponse(200, jsonType, fmt.Sprintf(data0, testServer.URL+"/next?n=10"))
 	testServer.PrepareResponse(200, jsonType, data1)
 
-	r := lpad.NewResource(nil, "", testServer.URL+"/mycol", nil)
+	v := lpad.NewValue(nil, "", testServer.URL+"/mycol", nil)
 
-	err := r.Get(nil)
+	err := v.Get(nil)
 	c.Assert(err, IsNil)
 
-	c.Assert(r.TotalSize(), Equals, 5)
-	c.Assert(r.StartIndex(), Equals, 1)
+	c.Assert(v.TotalSize(), Equals, 5)
+	c.Assert(v.StartIndex(), Equals, 1)
 
 	i := 1
-	err = r.For(func(r lpad.Resource) os.Error {
-		c.Assert(r.Map()["self_link"], Equals, "http://self"+strconv.Itoa(i))
+	err = v.For(func(v *lpad.Value) os.Error {
+		c.Assert(v.Map()["self_link"], Equals, "http://self"+strconv.Itoa(i))
 		i++
 		return nil
 	})
@@ -401,7 +407,7 @@ func (s *ResS) TestCollection(c *C) {
 	c.Assert(req1.Form["n"], Equals, []string{"10"})
 }
 
-func (s *ResS) TestCollectionGetError(c *C) {
+func (s *ValueS) TestCollectionGetError(c *C) {
 	data := `{
 		"total_size": 2,
 		"start": 0,
@@ -411,13 +417,13 @@ func (s *ResS) TestCollectionGetError(c *C) {
 	testServer.PrepareResponse(200, jsonType, fmt.Sprintf(data, testServer.URL+"/next"))
 	testServer.PrepareResponse(500, jsonType, "")
 
-	r := lpad.NewResource(nil, "", testServer.URL+"/mycol", nil)
+	v := lpad.NewValue(nil, "", testServer.URL+"/mycol", nil)
 
-	err := r.Get(nil)
+	err := v.Get(nil)
 	c.Assert(err, IsNil)
 
 	i := 0
-	err = r.For(func(r lpad.Resource) os.Error {
+	err = v.For(func(v *lpad.Value) os.Error {
 		i++
 		return nil
 	})
@@ -425,37 +431,37 @@ func (s *ResS) TestCollectionGetError(c *C) {
 	c.Assert(i, Equals, 1)
 }
 
-func (s *ResS) TestCollectionNoEntries(c *C) {
+func (s *ValueS) TestCollectionNoEntries(c *C) {
 	data := `{"total_size": 2, "start": 0}`
 	testServer.PrepareResponse(200, jsonType, data)
-	r := lpad.NewResource(nil, "", testServer.URL+"/mycol", nil)
+	v := lpad.NewValue(nil, "", testServer.URL+"/mycol", nil)
 
-	err := r.Get(nil)
+	err := v.Get(nil)
 	c.Assert(err, IsNil)
 
 	i := 0
-	err = r.For(func(r lpad.Resource) os.Error {
+	err = v.For(func(v *lpad.Value) os.Error {
 		i++
 		return nil
 	})
-	c.Assert(err, Matches, "No entries found in resource")
+	c.Assert(err, Matches, "No entries found in value")
 	c.Assert(i, Equals, 0)
 }
 
-func (s *ResS) TestCollectionIterError(c *C) {
+func (s *ValueS) TestCollectionIterError(c *C) {
 	data := `{
 		"total_size": 2,
 		"start": 0,
 		"entries": [{"self_link": "http://self1"}, {"self_link": "http://self2"}]
 	}`
 	testServer.PrepareResponse(200, jsonType, data)
-	r := lpad.NewResource(nil, "", testServer.URL+"/mycol", nil)
+	v := lpad.NewValue(nil, "", testServer.URL+"/mycol", nil)
 
-	err := r.Get(nil)
+	err := v.Get(nil)
 	c.Assert(err, IsNil)
 
 	i := 0
-	err = r.For(func(r lpad.Resource) os.Error {
+	err = v.For(func(v *lpad.Value) os.Error {
 		i++
 		return os.NewError("Stop!")
 	})

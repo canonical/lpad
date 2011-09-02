@@ -9,14 +9,14 @@ import (
 // http://bazaar.launchpad.net/
 func (root Root) Branch(url string) (branch Branch, err os.Error) {
 	params := Params{"ws.op": "getByUrl", "url": url}
-	r := root.Location("/branches")
-	err = r.Get(params)
-	return Branch{r}, err
+	v := root.Location("/branches")
+	err = v.Get(params)
+	return Branch{v}, err
 }
 
 // The Branch type represents a project in Launchpad.
 type Branch struct {
-	Resource
+	*Value
 }
 
 // Id returns the shortest version for the branch name. If the branch
@@ -45,7 +45,7 @@ type MergeStub struct {
 // ProposeMerge proposes this branch for merging on another branch by
 // creating the respective merge proposal.
 func (b Branch) ProposeMerge(stub *MergeStub) (mp MergeProposal, err os.Error) {
-	if stub.Target.Resource == nil {
+	if !stub.Target.IsValid() {
 		err = os.NewError("Missing target branch")
 	}
 	params := Params{
@@ -61,15 +61,15 @@ func (b Branch) ProposeMerge(stub *MergeStub) (mp MergeProposal, err os.Error) {
 	if stub.NeedsReview {
 		params["needs_review"] = "true"
 	}
-	if stub.PreReq.Resource != nil {
+	if stub.PreReq.IsValid() {
 		params["prerequisite_branch"] = stub.PreReq.URL()
 	}
-	r, err := b.Post(params)
-	return MergeProposal{r}, err
+	v, err := b.Post(params)
+	return MergeProposal{v}, err
 }
 
 type MergeProposal struct {
-	Resource
+	*Value
 }
 
 // Description returns the merge proposal introductory comment.
@@ -98,21 +98,21 @@ func (mp MergeProposal) Email() string {
 
 // Source returns the source branch that has additional code to land.
 func (mp MergeProposal) Source() (branch Branch, err os.Error) {
-	r, err := mp.GetLink("source_branch_link")
-	return Branch{r}, err
+	v, err := mp.GetLink("source_branch_link")
+	return Branch{v}, err
 }
 
 // Target returns the branch where code will land on once merged.
 func (mp MergeProposal) Target() (branch Branch, err os.Error) {
-	r, err := mp.GetLink("target_branch_link")
-	return Branch{r}, err
+	v, err := mp.GetLink("target_branch_link")
+	return Branch{v}, err
 }
 
 // PreReq returns the branch is the base (merged or not) for the code
 // within the target branch.
 func (mp MergeProposal) PreReq() (branch Branch, err os.Error) {
-	r, err := mp.GetLink("prerequisite_branch_link")
-	return Branch{r}, err
+	v, err := mp.GetLink("prerequisite_branch_link")
+	return Branch{v}, err
 }
 
 // WebPage returns the URL for accessing this merge proposal
