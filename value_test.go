@@ -85,7 +85,7 @@ func (s *ValueS) TestGetAbsLoc(c *C) {
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
 	err := v.Get(nil)
 	c.Assert(err, IsNil)
-	c.Assert(v.AbsLoc(), Equals, testServer.URL + "/self_link")
+	c.Assert(v.AbsLoc(), Equals, testServer.URL+"/self_link")
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
@@ -93,7 +93,7 @@ func (s *ValueS) TestGetAbsLoc(c *C) {
 
 	err = v.Get(nil)
 	c.Assert(err, IsNil)
-	c.Assert(v.AbsLoc(), Equals, testServer.URL + "/self_link")
+	c.Assert(v.AbsLoc(), Equals, testServer.URL+"/self_link")
 
 	req = testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")

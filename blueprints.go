@@ -76,4 +76,3 @@ func (bp Blueprint) LinkBranch(branch Branch) os.Error {
 	_, err := bp.Post(params)
 	return err
 }
-

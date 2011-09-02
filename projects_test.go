@@ -8,12 +8,12 @@ import (
 
 func (s *ModelS) TestProject(c *C) {
 	m := M{
-		"name": "thename",
-		"display_name": "Display Name",
-		"title": "Title",
-		"summary": "Summary",
-		"description": "Description",
-		"web_link": "http://page",
+		"name":                   "thename",
+		"display_name":           "Display Name",
+		"title":                  "Title",
+		"summary":                "Summary",
+		"description":            "Description",
+		"web_link":               "http://page",
 		"development_focus_link": testServer.URL + "/focus_link",
 	}
 	project := lpad.Project{lpad.NewValue(nil, "", "", m)}
@@ -46,13 +46,13 @@ func (s *ModelS) TestProject(c *C) {
 
 func (s *ModelS) TestMilestone(c *C) {
 	m := M{
-		"name": "thename",
-		"code_name": "thecodename",
-		"title": "Title",
-		"summary": "Summary",
+		"name":          "thename",
+		"code_name":     "thecodename",
+		"title":         "Title",
+		"summary":       "Summary",
 		"date_targeted": "2011-08-31",
-		"is_active": true,
-		"web_link": "http://page",
+		"is_active":     true,
+		"web_link":      "http://page",
 	}
 
 	ms := lpad.Milestone{lpad.NewValue(nil, "", "", m)}
@@ -79,11 +79,11 @@ func (s *ModelS) TestMilestone(c *C) {
 
 func (s *ModelS) TestSeries(c *C) {
 	m := M{
-		"name": "thename",
-		"title": "Title",
-		"summary": "Summary",
-		"is_active": true,
-		"web_link": "http://page",
+		"name":        "thename",
+		"title":       "Title",
+		"summary":     "Summary",
+		"is_active":   true,
+		"web_link":    "http://page",
 		"branch_link": testServer.URL + "/branch_link",
 	}
 

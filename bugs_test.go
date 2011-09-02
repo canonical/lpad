@@ -8,13 +8,13 @@ import (
 
 func (s *ModelS) TestBug(c *C) {
 	m := M{
-		"id": 123456.0,
-		"title": "Title",
-		"description": "Description",
-		"tags": "a b c",
-		"private": true,
+		"id":               123456.0,
+		"title":            "Title",
+		"description":      "Description",
+		"tags":             "a b c",
+		"private":          true,
 		"security_related": true,
-		"web_link": "http://page",
+		"web_link":         "http://page",
 	}
 	bug := lpad.Bug{lpad.NewValue(nil, "", "", m)}
 	c.Assert(bug.Id(), Equals, 123456)
@@ -38,10 +38,10 @@ func (s *ModelS) TestBug(c *C) {
 
 func (s *ModelS) TestBugTask(c *C) {
 	m := M{
-		"assignee_link": testServer.URL + "/assignee_link",
+		"assignee_link":  testServer.URL + "/assignee_link",
 		"milestone_link": testServer.URL + "/milestone_link",
-		"status": "New",
-		"importance": "High",
+		"status":         "New",
+		"importance":     "High",
 	}
 	task := lpad.BugTask{lpad.NewValue(nil, "", "", m)}
 
@@ -113,12 +113,12 @@ func (s *ModelS) TestRootCreateBug(c *C) {
 	testServer.PrepareResponse(200, jsonType, data)
 	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
 	stub := lpad.BugStub{
-		Title: "Title",
-		Description: "Description.",
-		Private: true,
+		Title:           "Title",
+		Description:     "Description.",
+		Private:         true,
 		SecurityRelated: true,
-		Tags: []string{"a", "b", "c"},
-		Target: lpad.NewValue(nil, "", "http://target", nil),
+		Tags:            []string{"a", "b", "c"},
+		Target:          lpad.NewValue(nil, "", "http://target", nil),
 	}
 	bug, err := root.CreateBug(&stub)
 	c.Assert(err, IsNil)
@@ -145,9 +145,9 @@ func (s *ModelS) TestRootCreateBugNoTags(c *C) {
 	testServer.PrepareResponse(200, jsonType, data)
 	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
 	stub := lpad.BugStub{
-		Title: "Title",
+		Title:       "Title",
 		Description: "Description.",
-		Target: lpad.NewValue(nil, "", "http://target", nil),
+		Target:      lpad.NewValue(nil, "", "http://target", nil),
 	}
 	bug, err := root.CreateBug(&stub)
 	c.Assert(err, IsNil)
@@ -162,11 +162,10 @@ func (s *ModelS) TestRootCreateBugNoTags(c *C) {
 	c.Assert(ok, Equals, false)
 }
 
-
 func (s *ModelS) TestBugLinkBranch(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{}`)
-	bug := lpad.Bug{lpad.NewValue(nil, "", testServer.URL + "/bugs/123456", nil)}
-	branch := lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL + "~joe/ensemble/some-branch", nil)}
+	bug := lpad.Bug{lpad.NewValue(nil, "", testServer.URL+"/bugs/123456", nil)}
+	branch := lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL+"~joe/ensemble/some-branch", nil)}
 
 	err := bug.LinkBranch(branch)
 	c.Assert(err, IsNil)

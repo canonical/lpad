@@ -7,11 +7,11 @@ import (
 
 func (s *ModelS) TestBlueprint(c *C) {
 	m := M{
-		"name": "thename",
-		"title": "Title",
-		"summary": "Summary",
+		"name":       "thename",
+		"title":      "Title",
+		"summary":    "Summary",
 		"whiteboard": "Whiteboard",
-		"web_link": "http://page",
+		"web_link":   "http://page",
 	}
 	project := lpad.Blueprint{lpad.NewValue(nil, "", "", m)}
 	c.Assert(project.Name(), Equals, "thename")
@@ -40,8 +40,8 @@ func (s *ModelS) TestBlueprint(c *C) {
 
 func (s *ModelS) TestBlueprintLinkBranch(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{}`)
-	bp := lpad.Blueprint{lpad.NewValue(nil, "", testServer.URL + "/project/+spec/the-bp", nil)}
-	branch := lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL + "~joe/ensemble/some-branch", nil)}
+	bp := lpad.Blueprint{lpad.NewValue(nil, "", testServer.URL+"/project/+spec/the-bp", nil)}
+	branch := lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL+"~joe/ensemble/some-branch", nil)}
 
 	err := bp.LinkBranch(branch)
 	c.Assert(err, IsNil)

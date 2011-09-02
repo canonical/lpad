@@ -215,7 +215,6 @@ func (oauth *StoredOAuth) write() os.Error {
 	return err
 }
 
-
 // The ConsoleOAuth type will cache successful authentications like
 // StoredOAuth and will also open a browser for the user to confirm
 // authentication and wait for confirmation with a console message

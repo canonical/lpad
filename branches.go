@@ -40,11 +40,11 @@ func (b Branch) WebPage() string {
 }
 
 type MergeStub struct {
-	Description string
+	Description   string
 	CommitMessage string
-	NeedsReview bool
-	Target Branch
-	PreReq Branch
+	NeedsReview   bool
+	Target        Branch
+	PreReq        Branch
 }
 
 // ProposeMerge proposes this branch for merging on another branch by
@@ -54,7 +54,7 @@ func (b Branch) ProposeMerge(stub *MergeStub) (mp MergeProposal, err os.Error) {
 		err = os.NewError("Missing target branch")
 	}
 	params := Params{
-		"ws.op": "createMergeProposal",
+		"ws.op":         "createMergeProposal",
 		"target_branch": stub.Target.AbsLoc(),
 	}
 	if stub.Description != "" {
@@ -93,7 +93,6 @@ func (mp MergeProposal) Status() string {
 func (mp MergeProposal) CommitMessage() string {
 	return mp.StringField("commit_message")
 }
-
 
 // Email returns the unique email that may be used to add new comments
 // to the merge proposal conversation.

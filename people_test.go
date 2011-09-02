@@ -174,7 +174,7 @@ func (s *ModelS) TestRootFindTeams(c *C) {
 func (s *ModelS) TestPerson(c *C) {
 	m := M{
 		"display_name": "Joe",
-		"web_link": "http://page",
+		"web_link":     "http://page",
 	}
 	person := lpad.Person{lpad.NewValue(nil, "", "", m)}
 	c.Assert(person.DisplayName(), Equals, "Joe")
@@ -185,9 +185,9 @@ func (s *ModelS) TestPerson(c *C) {
 
 func (s *ModelS) TestTeam(c *C) {
 	m := M{
-		"name": "myteam",
+		"name":         "myteam",
 		"display_name": "My Team",
-		"web_link": "http://page",
+		"web_link":     "http://page",
 	}
 	team := lpad.Team{lpad.NewValue(nil, "", "", m)}
 	c.Assert(team.Name(), Equals, "myteam")
@@ -253,6 +253,6 @@ func (s *ModelS) TestPersonNicks(c *C) {
 	nicks, err := person.IRCNicks()
 	c.Assert(err, IsNil)
 	c.Assert(len(nicks), Equals, 2)
-	c.Assert(nicks[0].Nick(), Equals, "canonical-nick") 
-	c.Assert(nicks[1].Nick(), Equals, "freenode-nick") 
+	c.Assert(nicks[0].Nick(), Equals, "canonical-nick")
+	c.Assert(nicks[1].Nick(), Equals, "freenode-nick")
 }

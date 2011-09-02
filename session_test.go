@@ -14,15 +14,15 @@ type SessionS struct {
 	HTTPSuite
 }
 
-type SessionI struct{
+type SessionI struct {
 	SuiteI
 }
 
 type dummyAuth struct {
 	loginBaseURL string
-	loginErr os.Error
-	signReq *http.Request
-	signErr os.Error
+	loginErr     os.Error
+	signReq      *http.Request
+	signErr      os.Error
 }
 
 func (a *dummyAuth) Login(baseURL string) os.Error {
@@ -60,7 +60,7 @@ func (s *SessionS) TestLogin(c *C) {
 }
 
 var lpadAuth = &lpad.OAuth{
-	Token: "SfVJpl7pJgSLJX9cm0wj",
+	Token:       "SfVJpl7pJgSLJX9cm0wj",
 	TokenSecret: "CXJGg1t5gTdjDqtFG0HNBFQn8WLWq8QQ3B2sHh9NmgLxQ6kGl9m123gQLZpDF8HFxQzk8HV78c9sGHQb",
 }
 
@@ -70,4 +70,3 @@ func (s *SessionI) TestLogin(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(me.DisplayName(), Equals, "Lpad Test User")
 }
-
