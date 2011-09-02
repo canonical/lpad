@@ -9,8 +9,8 @@ GOFILES=\
 	oauth.go\
 	people.go\
 	projects.go\
-	resource.go\
 	session.go\
+	value.go\
 
 
 include $(GOROOT)/src/Make.pkg
