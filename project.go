@@ -7,7 +7,7 @@ import (
 
 // Project returns a project with the given name.
 func (root Root) Project(name string) (project Project, err os.Error) {
-	r, err := root.GetLocation("/" + url.QueryEscape(name))
+	r, err := root.Location("/" + url.QueryEscape(name)).Get(nil)
 	return Project{r}, err
 }
 
@@ -93,20 +93,20 @@ func (p Project) SetDescription(description string) {
 // ActiveMilestones returns the list of active milestones associated with
 // the project, ordered by the target date.
 func (p Project) ActiveMilestones() (milestones MilestoneList, err os.Error) {
-	r, err := p.GetLink("active_milestones_collection_link")
+	r, err := p.Link("active_milestones_collection_link").Get(nil)
 	return MilestoneList{r}, err
 }
 
 // AllSeries returns the list of series associated with the project.
 func (p Project) AllSeries() (series ProjectSeriesList, err os.Error) {
-	r, err := p.GetLink("series_collection_link")
+	r, err := p.Link("series_collection_link").Get(nil)
 	return ProjectSeriesList{r}, err
 }
 
 // FocusSeries returns the development series set as the current
 // development focus.
 func (p Project) FocusSeries() (series ProjectSeries, err os.Error) {
-	r, err := p.GetLink("development_focus_link")
+	r, err := p.Link("development_focus_link").Get(nil)
 	return ProjectSeries{r}, err
 }
 
@@ -234,7 +234,7 @@ func (s ProjectSeries) Active() bool {
 
 // Branch returns the Bazaar branch associated with this project series.
 func (s ProjectSeries) Branch() (branch Branch, err os.Error) {
-	r, err := s.GetLink("branch_link")
+	r, err := s.Link("branch_link").Get(nil)
 	return Branch{r}, err
 }
 

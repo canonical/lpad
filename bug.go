@@ -18,7 +18,7 @@ type BugStub struct {
 
 // CreateBug creates a new bug with an appropriate bug task and returns it.
 func (root Root) Bug(id int) (bug Bug, err os.Error) {
-	v, err := root.GetLocation("/bugs/" + strconv.Itoa(id))
+	v, err := root.Location("/bugs/" + strconv.Itoa(id)).Get(nil)
 	return Bug{v}, err
 }
 
@@ -174,13 +174,13 @@ func (task BugTask) Importance() Importance {
 
 // Assignee returns the person currently assigned to work on the task.
 func (task BugTask) Assignee() (person Person, err os.Error) {
-	v, err := task.GetLink("assignee_link")
+	v, err := task.Link("assignee_link").Get(nil)
 	return Person{v}, err
 }
 
 // Milestone returns the milestone the task is currently targeted at.
 func (task BugTask) Milestone() (ms Milestone, err os.Error) {
-	v, err := task.GetLink("milestone_link")
+	v, err := task.Link("milestone_link").Get(nil)
 	return Milestone{v}, err
 }
 
@@ -223,6 +223,6 @@ func (list BugTaskList) For(f func(bt BugTask) os.Error) os.Error {
 
 // Tasks returns the list of bug tasks associated with the bug.
 func (bug Bug) Tasks() (list BugTaskList, err os.Error) {
-	v, err := bug.GetLink("bug_tasks_collection_link")
+	v, err := bug.Link("bug_tasks_collection_link").Get(nil)
 	return BugTaskList{v}, err
 }

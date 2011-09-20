@@ -47,10 +47,8 @@ type AnyValue interface {
 	BoolField(key string) bool
 	SetField(key string, value interface{})
 	Location(loc string) *Value
-	GetLocation(loc string) (v *Value, err os.Error)
-	Link(key string) (v *Value, err os.Error)
-	GetLink(key string) (v *Value, err os.Error)
-	Get(params Params) os.Error
+	Link(key string) *Value
+	Get(params Params) (*Value, os.Error)
 	Post(params Params) (*Value, os.Error)
 	Patch() os.Error
 	TotalSize() int
@@ -199,49 +197,32 @@ func (v *Value) Location(loc string) *Value {
 	return &Value{session: v.session, baseloc: v.baseloc, loc: v.join(loc)}
 }
 
-// GetLocation builds a value with Location and calls Get(nil)
-// on it.  It returns the loaded value in case of success.
-func (v *Value) GetLocation(loc string) (linkv *Value, err os.Error) {
-	linkv = v.Location(loc)
-	err = linkv.Get(nil)
-	if err != nil {
-		return nil, err
-	}
-	return linkv, nil
-}
-
 // Link calls Location with a URL available in the given key
-// of the current value's Map.  It returns an error if the
-// requested key isn't found in the value.  This is a convenient
-// way to navigate through *_link values.
-func (v *Value) Link(key string) (linkv *Value, err os.Error) {
+// of the current value's Map.  It returns nil if the requested
+// key isn't found in the value.  This is a convenient way to
+// navigate through *_link fields in values.
+func (v *Value) Link(key string) *Value {
 	link, ok := v.m[key].(string)
 	if !ok {
-		return nil, os.NewError(fmt.Sprintf("Field %q not found in value", key))
+		return nil
 	}
-	return v.Location(link), nil
+	return v.Location(link)
 }
 
-// GetLink builds a value with Link and calls Get(nil) on it.
-// It returns the loaded value in case of success.
-func (v *Value) GetLink(key string) (linkv *Value, err os.Error) {
-	linkv, err = v.Link(key)
-	if err != nil {
-		return nil, err
-	}
-	err = linkv.Get(nil)
-	if err != nil {
-		return nil, err
-	}
-	return linkv, nil
-}
+// Error returned when a Get, Post or Patch operation is done on
+// a nil value.
+var InvalidValue = os.NewError("Invalid value")
 
-// Get issues an HTTP GET to retrieve the content of this value.
-// If params is not nil, it will provided as the query for the GET
-// request.
-func (v *Value) Get(params Params) os.Error {
-	_, err := v.do("GET", params, nil)
-	return err
+// Get issues an HTTP GET to retrieve the content of this value,
+// and returns itself and an error in case of problems. If params
+// is not nil, it will provided as the query for the GET request.
+//
+// Since Get returns the value itself, it may be used as:
+//
+//     v, err := other.Link("some_link").Get(nil)
+//
+func (v *Value) Get(params Params) (same *Value, err os.Error) {
+	return v.do("GET", params, nil)
 }
 
 // Post issues an HTTP POST to perform a given action at the URL
@@ -254,6 +235,9 @@ func (v *Value) Post(params Params) (other *Value, err os.Error) {
 // Patch issues an HTTP PATCH request to modify the server value
 // with the local changes.
 func (v *Value) Patch() os.Error {
+	if v == nil {
+		return InvalidValue
+	}
 	data, err := json.Marshal(v.patch)
 	if err != nil {
 		return err
@@ -276,7 +260,7 @@ func (v *Value) StartIndex() int {
 // provided function for each entry.  If the function returns a
 // non-nil err value, the iteration will stop.  Watch out for
 // very large collections!
-func (v *Value) For(f func(*Value) os.Error) os.Error {
+func (v *Value) For(f func(*Value) os.Error) (err os.Error) {
 	for {
 		entries, ok := v.Map()["entries"].([]interface{})
 		if !ok {
@@ -293,15 +277,14 @@ func (v *Value) For(f func(*Value) os.Error) os.Error {
 				return err
 			}
 		}
-		nextv, _ := v.Link("next_collection_link")
+		nextv := v.Link("next_collection_link")
 		if nextv == nil {
 			break
 		}
-		err := nextv.Get(nil)
+		v, err = nextv.Get(nil)
 		if err != nil {
 			return err
 		}
-		v = nextv
 	}
 	return nil
 }
@@ -313,6 +296,9 @@ var httpClient = http.Client{
 }
 
 func (v *Value) do(method string, params Params, body []byte) (value *Value, err os.Error) {
+	if v == nil {
+		return nil, InvalidValue
+	}
 	value = v
 	query := multimap(params).Encode()
 	for redirect := 0; ; redirect++ {

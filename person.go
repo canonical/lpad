@@ -12,13 +12,13 @@ type Root struct {
 
 // Me returns the Person authenticated into Lauchpad in the current session.
 func (root Root) Me() (p Person, err os.Error) {
-	me, err := root.GetLocation("/people/+me")
+	me, err := root.Location("/people/+me").Get(nil)
 	return Person{me}, err
 }
 
 // Person returns the Person with the provided username.
 func (root Root) Person(username string) (p Person, err os.Error) {
-	v, err := root.GetLocation("/~" + url.QueryEscape(username))
+	v, err := root.Location("/~" + url.QueryEscape(username)).Get(nil)
 	if err == nil && v.BoolField("is_team") {
 		err = os.NewError(username + " is a team, not a person")
 	}
@@ -27,7 +27,7 @@ func (root Root) Person(username string) (p Person, err os.Error) {
 
 // Team returns the Team with the provided name.
 func (root Root) Team(name string) (p Team, err os.Error) {
-	v, err := root.GetLocation("/~" + url.QueryEscape(name))
+	v, err := root.Location("/~" + url.QueryEscape(name)).Get(nil)
 	if err == nil && !v.BoolField("is_team") {
 		err = os.NewError(name + " is not a team")
 	}
@@ -36,7 +36,7 @@ func (root Root) Team(name string) (p Team, err os.Error) {
 
 // Member returns the Team or Person with the provided name or username.
 func (root Root) Member(name string) (member AnyValue, err os.Error) {
-	v, err := root.GetLocation("/~" + url.QueryEscape(name))
+	v, err := root.Location("/~" + url.QueryEscape(name)).Get(nil)
 	if err != nil {
 		return nil, err
 	}
@@ -49,25 +49,22 @@ func (root Root) Member(name string) (member AnyValue, err os.Error) {
 // FindPeople returns a PersonList containing all Person accounts whose
 // Name, DisplayName or email address match text.
 func (root Root) FindPeople(text string) (list PersonList, err os.Error) {
-	list = PersonList{root.Location("/people")}
-	err = list.Get(Params{"ws.op": "findPerson", "text": text})
-	return
+	v, err := root.Location("/people").Get(Params{"ws.op": "findPerson", "text": text})
+	return PersonList{v}, err
 }
 
 // FindTeams returns a TeamList containing all Team accounts whose
 // Name, DisplayName or email address match text.
 func (root Root) FindTeams(text string) (list TeamList, err os.Error) {
-	list = TeamList{root.Location("/people")}
-	err = list.Get(Params{"ws.op": "findTeam", "text": text})
-	return
+	v, err := root.Location("/people").Get(Params{"ws.op": "findTeam", "text": text})
+	return TeamList{v}, err
 }
 
 // FindMembers returns a MemberList containing all Person or Team accounts
 // whose Name, DisplayName or email address match text.
 func (root Root) FindMembers(text string) (list MemberList, err os.Error) {
-	list = MemberList{root.Location("/people")}
-	err = list.Get(Params{"ws.op": "find", "text": text})
-	return
+	v, err := root.Location("/people").Get(Params{"ws.op": "find", "text": text})
+	return MemberList{v}, err
 }
 
 // The MemberList type encapsulates a mixed list containing Person and Team
@@ -145,7 +142,7 @@ func (person Person) SetDisplayName(name string) {
 
 // IRCNicks returns a list of all IRC nicks for the person.
 func (person Person) IRCNicks() (nicks []IRCNick, err os.Error) {
-	list, err := person.GetLink("irc_nicknames_collection_link")
+	list, err := person.Link("irc_nicknames_collection_link").Get(nil)
 	if err != nil {
 		return nil, err
 	}

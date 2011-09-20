@@ -2,12 +2,13 @@ package lpad
 
 import (
 	"os"
+	"time"
 	"url"
 )
 
 // Distro returns a distribution with the given name.
 func (root Root) Distro(name string) (distribution Distro, err os.Error) {
-	r, err := root.GetLocation("/" + url.QueryEscape(name))
+	r, err := root.Location("/" + url.QueryEscape(name)).Get(nil)
 	return Distro{r}, err
 }
 
@@ -91,20 +92,20 @@ func (d Distro) SetDescription(description string) {
 // ActiveMilestones returns the list of active milestones associated with
 // the distribution, ordered by the target date.
 func (d Distro) ActiveMilestones() (milestones MilestoneList, err os.Error) {
-	r, err := d.GetLink("active_milestones_collection_link")
+	r, err := d.Link("active_milestones_collection_link").Get(nil)
 	return MilestoneList{r}, err
 }
 
 // AllSeries returns the list of series associated with the distribution.
 func (d Distro) AllSeries() (series DistroSeriesList, err os.Error) {
-	r, err := d.GetLink("series_collection_link")
+	r, err := d.Link("series_collection_link").Get(nil)
 	return DistroSeriesList{r}, err
 }
 
 // FocusDistroSeries returns the distribution series set as the current
 // development focus.
 func (d Distro) FocusSeries() (series DistroSeries, err os.Error) {
-	r, err := d.GetLink("current_series_link")
+	r, err := d.Link("current_series_link").Get(nil)
 	return DistroSeries{r}, err
 }
 

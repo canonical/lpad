@@ -65,8 +65,9 @@ func (s *ValueS) TestFieldMethods(c *C) {
 func (s *ValueS) TestGet(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{"a": 1, "b": [1, 2]}`)
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
-	err := v.Get(nil)
+	o, err := v.Get(nil)
 	c.Assert(err, IsNil)
+	c.Assert(&o, Equals, &v)
 	c.Assert(v.Map()["a"], Equals, float64(1))
 	c.Assert(v.Map()["b"], Equals, []interface{}{float64(1), float64(2)})
 	c.Assert(v.AbsLoc(), Equals, testServer.URL+"/myvalue")
@@ -83,7 +84,7 @@ func (s *ValueS) TestGetAbsLoc(c *C) {
 	testServer.PrepareResponse(200, jsonType, data)
 
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
-	err := v.Get(nil)
+	_, err := v.Get(nil)
 	c.Assert(err, IsNil)
 	c.Assert(v.AbsLoc(), Equals, testServer.URL+"/self_link")
 
@@ -91,7 +92,7 @@ func (s *ValueS) TestGetAbsLoc(c *C) {
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/myvalue")
 
-	err = v.Get(nil)
+	_, err = v.Get(nil)
 	c.Assert(err, IsNil)
 	c.Assert(v.AbsLoc(), Equals, testServer.URL+"/self_link")
 
@@ -103,7 +104,7 @@ func (s *ValueS) TestGetAbsLoc(c *C) {
 func (s *ValueS) TestGetWithParams(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
-	err := v.Get(lpad.Params{"k": "v"})
+	_, err := v.Get(lpad.Params{"k": "v"})
 	c.Assert(err, IsNil)
 	c.Assert(v.Map()["ok"], Equals, true)
 
@@ -116,7 +117,7 @@ func (s *ValueS) TestGetWithParams(c *C) {
 func (s *ValueS) TestGetWithParamsMerging(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue?k2=v2", nil)
-	err := v.Get(lpad.Params{"k1": "v1"})
+	_, err := v.Get(lpad.Params{"k1": "v1"})
 	c.Assert(err, IsNil)
 	c.Assert(v.Map()["ok"], Equals, true)
 
@@ -135,7 +136,7 @@ func (s *ValueS) TestGetSign(c *C) {
 
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
 	v := lpad.NewValue(session, "", testServer.URL+"/myvalue", nil)
-	err := v.Get(nil)
+	_, err := v.Get(nil)
 	c.Assert(err, IsNil)
 	c.Assert(v.Map()["ok"], Equals, true)
 
@@ -153,7 +154,7 @@ func (s *ValueS) TestGetRedirect(c *C) {
 	testServer.PrepareResponse(303, headers, "")
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
-	err := v.Get(nil)
+	_, err := v.Get(nil)
 	c.Assert(err, IsNil)
 	c.Assert(v.AbsLoc(), Equals, testServer.URL+"/myothervalue")
 	c.Assert(v.Map()["ok"], Equals, true)
@@ -169,19 +170,19 @@ func (s *ValueS) TestGetNonJSONContent(c *C) {
 	}
 	testServer.PrepareResponse(200, headers, "NOT JSON")
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
-	err := v.Get(nil)
+	_, err := v.Get(nil)
 	c.Assert(err, Matches, "Non-JSON content-type: text/plain.*")
 }
 
 func (s *ValueS) TestGetError(c *C) {
 	testServer.PrepareResponse(500, jsonType, `{"what": "ever"}`)
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
-	err := v.Get(nil)
+	_, err := v.Get(nil)
 	c.Assert(err, Matches, `Server returned 500 and body: {"what": "ever"}`)
 
 	testServer.PrepareResponse(404, jsonType, "")
 	v = lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
-	err = v.Get(nil)
+	_, err = v.Get(nil)
 	c.Assert(err, Matches, `Server returned 404 and no body.`)
 }
 
@@ -191,7 +192,7 @@ func (s *ValueS) TestGetRedirectWithoutLocation(c *C) {
 	}
 	testServer.PrepareResponse(303, headers, `{"ok": true}`)
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
-	err := v.Get(nil)
+	_, err := v.Get(nil)
 	c.Assert(err, Matches, "Get : 303 response missing Location header")
 }
 
@@ -272,7 +273,7 @@ func (s *ValueS) TestPatch(c *C) {
 	testServer.PrepareResponse(200, nil, "")
 
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
-	err := v.Get(nil)
+	_, err := v.Get(nil)
 	c.Assert(err, IsNil)
 
 	v.SetField("a", 3)
@@ -307,7 +308,7 @@ func (s *ValueS) TestPatchWithContent(c *C) {
 	testServer.PrepareResponse(209, jsonType, `{"new": "content"}`)
 
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
-	err := v.Get(nil)
+	_, err := v.Get(nil)
 	c.Assert(err, IsNil)
 
 	v.SetField("a", 3)
@@ -363,35 +364,32 @@ func (s *ValueS) TestLink(c *C) {
 	for _, test := range locationTests {
 		m := map[string]interface{}{"some_link": test.AbsLoc}
 		v1 := lpad.NewValue(session, test.BaseLoc, test.Loc, m)
-		v2, err := v1.Link("some_link")
-		c.Assert(err, IsNil)
+		v2 := v1.Link("some_link")
+		c.Assert(v2, NotNil)
 		c.Assert(v2.AbsLoc(), Equals, test.AbsLoc)
 		c.Assert(v2.BaseLoc(), Equals, test.BaseLoc)
 		c.Assert(v2.Session(), Equals, session)
 
-		v3, err := v1.Link("bad_link")
-		c.Assert(err, Matches, `Field "bad_link" not found in value`)
+		v3 := v1.Link("bad_link")
 		c.Assert(v3, IsNil)
 	}
 }
 
-func (s *ValueS) TestGetLocation(c *C) {
-	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
-	v := lpad.NewValue(nil, "", "", nil)
-	other, err := v.GetLocation(testServer.URL + "/link")
-	c.Assert(err, IsNil)
-	c.Assert(other.Map()["ok"], Equals, true)
-}
+func (s *ValueS) TestNilValueHandlign(c *C) {
+	// This is meaningful so Link can return a single
+	// value and be used as Link("link").Get(nil), etc.
+	nv := (*lpad.Value)(nil)
 
-func (s *ValueS) TestGetLink(c *C) {
-	m := M{
-		"some_link": testServer.URL + "/link",
-	}
-	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
-	v := lpad.NewValue(nil, "", "", m)
-	other, err := v.GetLink("some_link")
-	c.Assert(err, IsNil)
-	c.Assert(other.Map()["ok"], Equals, true)
+	v, err := nv.Get(nil)
+	c.Assert(v, IsNil)
+	c.Assert(err, Equals, lpad.InvalidValue)
+
+	v, err = nv.Post(nil)
+	c.Assert(v, IsNil)
+	c.Assert(err, Equals, lpad.InvalidValue)
+
+	err = nv.Patch()
+	c.Assert(err, Equals, lpad.InvalidValue)
 }
 
 func (s *ValueS) TestCollection(c *C) {
@@ -411,7 +409,7 @@ func (s *ValueS) TestCollection(c *C) {
 
 	v := lpad.NewValue(nil, "", testServer.URL+"/mycol", nil)
 
-	err := v.Get(nil)
+	_, err := v.Get(nil)
 	c.Assert(err, IsNil)
 
 	c.Assert(v.TotalSize(), Equals, 5)
@@ -443,7 +441,7 @@ func (s *ValueS) TestCollectionGetError(c *C) {
 
 	v := lpad.NewValue(nil, "", testServer.URL+"/mycol", nil)
 
-	err := v.Get(nil)
+	_, err := v.Get(nil)
 	c.Assert(err, IsNil)
 
 	i := 0
@@ -460,7 +458,7 @@ func (s *ValueS) TestCollectionNoEntries(c *C) {
 	testServer.PrepareResponse(200, jsonType, data)
 	v := lpad.NewValue(nil, "", testServer.URL+"/mycol", nil)
 
-	err := v.Get(nil)
+	_, err := v.Get(nil)
 	c.Assert(err, IsNil)
 
 	i := 0
@@ -481,7 +479,7 @@ func (s *ValueS) TestCollectionIterError(c *C) {
 	testServer.PrepareResponse(200, jsonType, data)
 	v := lpad.NewValue(nil, "", testServer.URL+"/mycol", nil)
 
-	err := v.Get(nil)
+	_, err := v.Get(nil)
 	c.Assert(err, IsNil)
 
 	i := 0

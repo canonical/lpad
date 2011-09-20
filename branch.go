@@ -8,9 +8,7 @@ import (
 // the short form lp: notation, or the web address rooted at
 // http://bazaar.launchpad.net/
 func (root Root) Branch(url string) (branch Branch, err os.Error) {
-	params := Params{"ws.op": "getByUrl", "url": url}
-	v := root.Location("/branches")
-	err = v.Get(params)
+	v, err := root.Location("/branches").Get(Params{"ws.op": "getByUrl", "url": url})
 	return Branch{v}, err
 }
 
@@ -102,20 +100,20 @@ func (mp MergeProposal) Email() string {
 
 // Source returns the source branch that has additional code to land.
 func (mp MergeProposal) Source() (branch Branch, err os.Error) {
-	v, err := mp.GetLink("source_branch_link")
+	v, err := mp.Link("source_branch_link").Get(nil)
 	return Branch{v}, err
 }
 
 // Target returns the branch where code will land on once merged.
 func (mp MergeProposal) Target() (branch Branch, err os.Error) {
-	v, err := mp.GetLink("target_branch_link")
+	v, err := mp.Link("target_branch_link").Get(nil)
 	return Branch{v}, err
 }
 
 // PreReq returns the branch is the base (merged or not) for the code
 // within the target branch.
 func (mp MergeProposal) PreReq() (branch Branch, err os.Error) {
-	v, err := mp.GetLink("prerequisite_branch_link")
+	v, err := mp.Link("prerequisite_branch_link").Get(nil)
 	return Branch{v}, err
 }
 

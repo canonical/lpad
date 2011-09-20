@@ -47,7 +47,7 @@ func (s *SessionS) TestLogin(c *C) {
 	c.Assert(root.AbsLoc(), Equals, testServer.URL)
 	c.Assert(len(root.Map()), Equals, 0)
 
-	err = root.Get(nil)
+	_, err = root.Get(nil)
 	c.Assert(err, IsNil)
 	c.Assert(root.Map()["ok"], Equals, true)
 
