@@ -3,13 +3,13 @@ include $(GOROOT)/src/Make.inc
 TARG=launchpad.net/lpad
 
 GOFILES=\
-	blueprints.go\
-	branches.go\
-	bugs.go\
+	blueprint.go\
+	branch.go\
+	bug.go\
 	oauth.go\
-	people.go\
-	projects.go\
-	distros.go\
+	person.go\
+	project.go\
+	distro.go\
 	session.go\
 	value.go\
 
