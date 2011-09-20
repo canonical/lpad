@@ -97,21 +97,21 @@ func (p Project) ActiveMilestones() (milestones MilestoneList, err os.Error) {
 	return MilestoneList{r}, err
 }
 
-// AllSeries returns the list of series associated with the project, ordered by
-// the target date.
-func (p Project) AllSeries() (series SeriesList, err os.Error) {
+// AllSeries returns the list of series associated with the project.
+func (p Project) AllSeries() (series ProjectSeriesList, err os.Error) {
 	r, err := p.GetLink("series_collection_link")
-	return SeriesList{r}, err
+	return ProjectSeriesList{r}, err
 }
 
 // FocusSeries returns the development series set as the current
 // development focus.
-func (p Project) FocusSeries() (series Series, err os.Error) {
+func (p Project) FocusSeries() (series ProjectSeries, err os.Error) {
 	r, err := p.GetLink("development_focus_link")
-	return Series{r}, err
+	return ProjectSeries{r}, err
 }
 
-// The Milestone type represents a milestone associated with a project.
+// The Milestone type represents a milestone associated with a project
+// or distribution.
 type Milestone struct {
 	*Value
 }
@@ -184,7 +184,8 @@ func (ms Milestone) SetDate(date string) {
 	ms.SetField("date_targeted", date)
 }
 
-// The MilestoneList represents a list of project milestones.
+// The MilestoneList type represents a list of milestones that
+// may be iterated over.
 type MilestoneList struct {
 	*Value
 }
@@ -199,81 +200,81 @@ func (list MilestoneList) For(f func(m Milestone) os.Error) os.Error {
 	})
 }
 
-// The Series type represents a series associated with a project.
-type Series struct {
+// The ProjectSeries type represents a series associated with a project.
+type ProjectSeries struct {
 	*Value
 }
 
 // Name returns the series name, which is a unique name that identifies
 // it and is used in URLs. It consists of only lowercase letters, digits,
 // and simple punctuation.  For example, "2.0" or "trunk".
-func (s Series) Name() string {
+func (s ProjectSeries) Name() string {
 	return s.StringField("name")
 }
 
 // Title returns the series context title for pages.
-func (s Series) Title() string {
+func (s ProjectSeries) Title() string {
 	return s.StringField("title")
 }
 
 // Summary returns the summary for this project series.
-func (s Series) Summary() string {
+func (s ProjectSeries) Summary() string {
 	return s.StringField("summary")
 }
 
 // WebPage returns the URL for accessing this project series in a browser.
-func (s Series) WebPage() string {
+func (s ProjectSeries) WebPage() string {
 	return s.StringField("web_link")
 }
 
 // Active returns true if this project series is still in active development.
-func (s Series) Active() bool {
+func (s ProjectSeries) Active() bool {
 	return s.BoolField("is_active")
 }
 
 // Branch returns the Bazaar branch associated with this project series.
-func (s Series) Branch() (branch Branch, err os.Error) {
+func (s ProjectSeries) Branch() (branch Branch, err os.Error) {
 	r, err := s.GetLink("branch_link")
 	return Branch{r}, err
 }
 
 // SetName changes the series name, which must consists of only letters,
 // numbers, and simple punctuation. For example: "2.0" or "trunk".
-func (s Series) SetName(name string) {
+func (s ProjectSeries) SetName(name string) {
 	s.SetField("name", name)
 }
 
 // SetTitle changes the series title.
-func (s Series) SetTitle(title string) {
+func (s ProjectSeries) SetTitle(title string) {
 	s.SetField("title", title)
 }
 
 // SetSummary changes the summary for this project series.
-func (s Series) SetSummary(summary string) {
+func (s ProjectSeries) SetSummary(summary string) {
 	s.SetField("summary", summary)
 }
 
 // SetActive sets whether the series is still in active development or not.
-func (s Series) SetActive(active bool) {
+func (s ProjectSeries) SetActive(active bool) {
 	s.SetField("is_active", active)
 }
 
 // SetBranch changes the Bazaar branch associated with this project series.
-func (s Series) SetBranch(branch Branch) {
+func (s ProjectSeries) SetBranch(branch Branch) {
 	s.SetField("branch_link", branch.AbsLoc())
 }
 
-// The SeriesList represents a list of project series.
-type SeriesList struct {
+// The ProjectSeriesList represents a list of project series.
+type ProjectSeriesList struct {
 	*Value
 }
 
 // For iterates over the list of series and calls f for each one.
 // If f returns a non-nil error, iteration will stop and the error will
 // be returned as the result of For.
-func (list SeriesList) For(f func(s Series) os.Error) os.Error {
+func (list ProjectSeriesList) For(f func(s ProjectSeries) os.Error) os.Error {
 	return list.Value.For(func(r *Value) os.Error {
-		f(Series{r})
+		f(ProjectSeries{r})
 		return nil
 	})
 }

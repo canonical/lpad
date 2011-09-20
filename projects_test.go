@@ -77,7 +77,7 @@ func (s *ModelS) TestMilestone(c *C) {
 	c.Assert(ms.Active(), Equals, false)
 }
 
-func (s *ModelS) TestSeries(c *C) {
+func (s *ModelS) TestProjectSeries(c *C) {
 	m := M{
 		"name":        "thename",
 		"title":       "Title",
@@ -87,7 +87,7 @@ func (s *ModelS) TestSeries(c *C) {
 		"branch_link": testServer.URL + "/branch_link",
 	}
 
-	series := lpad.Series{lpad.NewValue(nil, "", "", m)}
+	series := lpad.ProjectSeries{lpad.NewValue(nil, "", "", m)}
 	c.Assert(series.Name(), Equals, "thename")
 	c.Assert(series.Title(), Equals, "Title")
 	c.Assert(series.Summary(), Equals, "Summary")
@@ -189,7 +189,7 @@ func (s *ModelS) TestProjectAllSeries(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(s lpad.Series) os.Error {
+	list.For(func(s lpad.ProjectSeries) os.Error {
 		names = append(names, s.Name())
 		return nil
 	})

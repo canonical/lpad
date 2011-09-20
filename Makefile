@@ -9,6 +9,7 @@ GOFILES=\
 	oauth.go\
 	people.go\
 	projects.go\
+	distros.go\
 	session.go\
 	value.go\
 
