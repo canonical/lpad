@@ -53,8 +53,9 @@ func (d Distro) WebPage() string {
 }
 
 type BranchTip struct {
-	URL, Revision string
-	OfficialSeries []string 
+	UniqueName     string
+	Revision       string
+	OfficialSeries []string
 }
 
 // BranchTips returns a list of all branches registered under the given
@@ -80,7 +81,7 @@ func (d Distro) BranchTips(sinceNS int64) (tips []BranchTip, err os.Error) {
 			return nil, InvalidValue
 		}
 		url, ok1 := li[0].(string)
-		rev, ok2 := li[1].(string) 
+		rev, ok2 := li[1].(string)
 		series, ok3 := li[2].([]interface{})
 		if !(ok1 && ok2 && ok3) {
 			return nil, InvalidValue
@@ -154,7 +155,6 @@ func (d Distro) FocusSeries() (series DistroSeries, err os.Error) {
 	r, err := d.Link("current_series_link").Get(nil)
 	return DistroSeries{r}, err
 }
-
 
 // The DistroSeries type represents a series associated with a distribution.
 type DistroSeries struct {
