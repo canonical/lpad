@@ -78,6 +78,14 @@ func (s *ValueS) TestGet(c *C) {
 	c.Assert(req.Header.Get("Accept"), Equals, "application/json")
 }
 
+func (s *ValueS) TestGetList(c *C) {
+	testServer.PrepareResponse(200, jsonType, `["a", "b", "c"]`)
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	_, err := v.Get(nil)
+	c.Assert(err, IsNil)
+	c.Assert(v.Map()["value"], Equals, []interface{}{"a", "b", "c"})
+}
+
 func (s *ValueS) TestGetAbsLoc(c *C) {
 	data := `{"a": 1, "self_link": "` + testServer.URL + `/self_link"}`
 	testServer.PrepareResponse(200, jsonType, data)

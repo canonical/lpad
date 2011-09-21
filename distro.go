@@ -52,6 +52,52 @@ func (d Distro) WebPage() string {
 	return d.StringField("web_link")
 }
 
+type BranchTip struct {
+	URL, Revision string
+	OfficialSeries []string 
+}
+
+// BranchTips returns a list of all branches registered under the given
+// distribution changed after the sinceNS timestamp, provided in nanoseconds.
+// If sinceNS is zero, all branch tips in the distribution are returned.
+func (d Distro) BranchTips(sinceNS int64) (tips []BranchTip, err os.Error) {
+	params := Params{"ws.op": "getBranchTips"}
+	if sinceNS != 0 {
+		t := time.NanosecondsToUTC(sinceNS)
+		params["since"] = t.Format(time.RFC3339)
+	}
+	v, err := d.Location("").Get(params)
+	if err != nil {
+		return nil, err
+	}
+	l, ok := v.Map()["value"].([]interface{})
+	if !ok {
+		return nil, InvalidValue
+	}
+	for i := range l {
+		li, ok := l[i].([]interface{})
+		if !ok || len(li) != 3 {
+			return nil, InvalidValue
+		}
+		url, ok1 := li[0].(string)
+		rev, ok2 := li[1].(string) 
+		series, ok3 := li[2].([]interface{})
+		if !(ok1 && ok2 && ok3) {
+			return nil, InvalidValue
+		}
+		sseries := []string{}
+		for i := range series {
+			s, ok := series[i].(string)
+			if !ok {
+				return nil, InvalidValue
+			}
+			sseries = append(sseries, s)
+		}
+		tips = append(tips, BranchTip{url, rev, sseries})
+	}
+	return tips, err
+}
+
 // SetName changes the distribution name, which must be composed of at
 // least one lowercase letter or number, followed by letters, numbers,
 // dots, hyphens or pluses. This is a short name used in URLs.

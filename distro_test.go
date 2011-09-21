@@ -151,3 +151,35 @@ func (s *ModelS) TestDistroAllSeries(c *C) {
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/col_link")
 }
+
+func (s *ModelS) TestBranchTips(c *C) {
+	data := `[["lp:a", "rev1", ["series1", "series2"]], ["lp:b", "rev2", []]]`
+	testServer.PrepareResponse(200, jsonType, data)
+	distro := lpad.Distro{lpad.NewValue(nil, testServer.URL, testServer.URL+"/distro", nil)}
+	tips, err := distro.BranchTips(0)
+	c.Assert(err, IsNil)
+	c.Assert(tips, Equals, []lpad.BranchTip{
+		{"lp:a", "rev1", []string{"series1", "series2"}},
+		{"lp:b", "rev2", nil},
+	})
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/distro")
+	c.Assert(req.Form["ws.op"], Equals, []string{"getBranchTips"})
+	c.Assert(req.Form["since"], Equals, []string{})
+}
+
+func (s *ModelS) TestBranchTipsWithSince(c *C) {
+	testServer.PrepareResponse(200, jsonType, "[]")
+	distro := lpad.Distro{lpad.NewValue(nil, testServer.URL, testServer.URL+"/distro", nil)}
+	tips, err := distro.BranchTips(1316567786e9)
+	c.Assert(err, IsNil)
+	c.Assert(tips, Equals, []lpad.BranchTip{})
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/distro")
+	c.Assert(req.Form["ws.op"], Equals, []string{"getBranchTips"})
+	c.Assert(req.Form["since"], Equals, []string{"2011-09-21T01:16:26Z"})
+}

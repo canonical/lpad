@@ -303,10 +303,10 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 	query := multimap(params).Encode()
 	for redirect := 0; ; redirect++ {
 		req, err := http.NewRequest(method, value.AbsLoc(), nil)
-		req.Header["Accept"] = []string{"application/json"}
 		if err != nil {
 			return nil, err
 		}
+		req.Header["Accept"] = []string{"application/json"}
 
 		ctype := "application/json"
 		if method == "POST" {
@@ -390,6 +390,10 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 			return nil, err
 		}
 		value.m = make(map[string]interface{})
+		if len(body) > 0 && body[0] == '[' {
+			body = append([]byte(`{"value":`), body...)
+			body = append(body, '}')
+		}
 		return value, json.Unmarshal(body, &value.m)
 	}
 
