@@ -49,7 +49,7 @@ func (s *ModelS) TestDistroSeries(c *C) {
 		"name":        "thename",
 		"title":       "Title",
 		"summary":     "Summary",
-		"is_active":   true,
+		"active":   true,
 		"web_link":    "http://page",
 	}
 

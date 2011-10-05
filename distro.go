@@ -185,7 +185,7 @@ func (s DistroSeries) WebPage() string {
 
 // Active returns true if this distribution series is still in active development.
 func (s DistroSeries) Active() bool {
-	return s.BoolField("is_active")
+	return s.BoolField("active")
 }
 
 // SetName changes the series name, which must consists of only letters,
@@ -206,7 +206,7 @@ func (s DistroSeries) SetSummary(summary string) {
 
 // SetActive sets whether the series is still in active development or not.
 func (s DistroSeries) SetActive(active bool) {
-	s.SetField("is_active", active)
+	s.SetField("active", active)
 }
 
 // The DistroSeriesList represents a list of distribution series.
