@@ -3,7 +3,10 @@ include $(GOROOT)/src/Make.inc
 TARG=launchpad.net/lpad
 
 GOFILES=\
+	archive.go\
 	blueprint.go\
+	build.go\
+	builder.go\
 	branch.go\
 	bug.go\
 	oauth.go\
