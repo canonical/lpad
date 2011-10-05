@@ -19,7 +19,7 @@ func main() {
 	check(err)
 	fmt.Println(me.DisplayName())
 
-	v, err := root.GetLocation("/bugs/123456")
+	v, err := root.Location("/bugs/123456").Get(nil)
 	fmt.Printf("%#v\n", v.Map())
 
 	//check(err)
