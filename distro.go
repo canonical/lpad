@@ -17,6 +17,24 @@ type Distro struct {
 	*Value
 }
 
+type DistroList struct {
+	*Value
+}
+
+//Distros returns the list of all distributions registered in Launchpad
+func (root Root) Distros() (distrolist DistroList, err os.Error) {
+	list, err := root.Location("/distros/").Get(nil)
+	return DistroList{list}, err
+}
+
+//For calls a function on each distro in the list
+func (list DistroList) For(fn func(d Distro) os.Error) {
+	list.Value.For(func(v *Value) os.Error {
+		fn(Distro{v})
+		return nil
+	})
+}
+
 // Name returns the distribution name, which is composed of at least one
 // lowercase letter or number, followed by letters, numbers, dots,
 // hyphens or pluses. This is a short name used in URLs.
@@ -149,6 +167,18 @@ func (d Distro) AllSeries() (series DistroSeriesList, err os.Error) {
 	return DistroSeriesList{r}, err
 }
 
+// Archives returns the archives associated with the distribution.
+func (d Distro) Archives() (archives ArchiveList, err os.Error) {
+	r, err := d.Link("archives_collection_link").Get(nil)
+	return ArchiveList{r}, err
+}
+
+//Archive returns the named archive associated with the distribution
+func (d Distro) Archive(name string) (archive Archive, err os.Error) {
+	v, err := d.Location("").Get(Params{"ws.op": "getArchive", "name": name})
+	return Archive{v}, err
+}
+
 // FocusDistroSeries returns the distribution series set as the current
 // development focus.
 func (d Distro) FocusSeries() (series DistroSeries, err os.Error) {
@@ -168,9 +198,27 @@ func (s DistroSeries) Name() string {
 	return s.StringField("name")
 }
 
+// DisplayName returns the distribution series name as it would be displayed
+// in a paragraph. For example, a series' full name might be
+// "Oneiric Ocelot" and its display name could be "Oneiric".
+func (d DistroSeries) DisplayName() string {
+	return d.StringField("displayname")
+}
+
+// DisplayName returns the distribution series name as it would be displayed
+// in a paragraph. For example, a series's full might be "Oneiric Ocelot"
+func (d DistroSeries) FullSeriesName() string {
+	return d.StringField("fullseriesname")
+}
+
 // Title returns the series context title for pages.
 func (s DistroSeries) Title() string {
 	return s.StringField("title")
+}
+
+// URL of this distro series
+func (s DistroSeries) SelfLink() string {
+	return s.StringField("self_link")
 }
 
 // Summary returns the summary for this distribution series.
@@ -186,6 +234,25 @@ func (s DistroSeries) WebPage() string {
 // Active returns true if this distribution series is still in active development.
 func (s DistroSeries) Active() bool {
 	return s.BoolField("active")
+}
+
+// Description returns the distribution description.
+func (d DistroSeries) Description() string {
+	return d.StringField("description")
+}
+
+//GetBuildRecords gets a list of all the Build objects for this distribution series
+//for packages in the given pocket and with names matching source_name
+func (d DistroSeries) GetBuildRecords(build_state BuildState, pocket Pocket, source_name string) (list BuildList, err os.Error) {
+	params := Params{"ws.op": "getBuildRecords",
+		"build_state": string(build_state)}
+	if pocket != PocketAny {
+		params["pocket"] = string(pocket)
+	}
+	params["source_name"] = source_name
+
+	v, err := d.Location("").Get(params)
+	return BuildList{v}, err
 }
 
 // SetName changes the series name, which must consists of only letters,

@@ -47,16 +47,22 @@ func (s *ModelS) TestDistro(c *C) {
 func (s *ModelS) TestDistroSeries(c *C) {
 	m := M{
 		"name":        "thename",
+		"displayname":           "Display Name",
+		"fullseriesname":         "Full Series Name",
 		"title":       "Title",
 		"summary":     "Summary",
+		"description":     "Description",
 		"active":   true,
 		"web_link":    "http://page",
 	}
 
 	series := lpad.DistroSeries{lpad.NewValue(nil, "", "", m)}
 	c.Assert(series.Name(), Equals, "thename")
+	c.Assert(series.DisplayName(), Equals, "Display Name")
+	c.Assert(series.FullSeriesName(), Equals, "Full Series Name")
 	c.Assert(series.Title(), Equals, "Title")
 	c.Assert(series.Summary(), Equals, "Summary")
+	c.Assert(series.Description(), Equals, "Description")
 	c.Assert(series.Active(), Equals, true)
 	c.Assert(series.WebPage(), Equals, "http://page")
 	series.SetName("newname")
