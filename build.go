@@ -107,8 +107,31 @@ func (s SPPH) PackageVersion() string {
 	return s.StringField("source_package_version")
 }
 
+//Get the distro series this is published in
+func (s SPPH) DistroSeries() (a DistroSeries) {
+    v, _ := s.Link("distro_series_link").Get(nil)
+    return DistroSeries{v}
+}
+
+//Get the archive this is published in
+func (s SPPH) Archive() (a Archive) {
+    v, _ := s.Link("archive_link").Get(nil)
+    return Archive{v}
+}
+
 //Gets the SPPH corresponding to a Build
 func (build Build) CurrentSourcePublicationLink() (spph SPPH, err os.Error) {
 	v, err := build.Link("current_source_publication_link").Get(nil)
 	return SPPH{v}, err
+}
+
+type SPPHList struct {
+    *Value
+}
+
+func (list SPPHList) For(f func (s SPPH) os.Error) os.Error {
+    return list.Value.For(func (v *Value) os.Error {
+        f(SPPH{v})
+        return nil
+    })
 }

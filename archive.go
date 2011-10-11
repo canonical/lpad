@@ -39,6 +39,16 @@ func (a Archive) WebPage() string {
 	return a.StringField("web_link")
 }
 
+func (a Archive) GetPublishedSources(source string) (spph SPPHList, err os.Error) {
+    p := Params{"ws.op" : "getPublishedSources",
+                "source_name":source,
+                "exact_match":"true",
+                "pocket":"Release",
+                "status":"Published"}
+    v, err := a.Location(a.SelfLink()).Get(p)
+    return SPPHList{v}, err
+}
+
 type ArchiveList struct {
 	*Value
 }
