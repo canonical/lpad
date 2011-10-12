@@ -92,6 +92,11 @@ func (build Build) DateBuilt() string {
 	return build.StringField("datebuilt")
 }
 
+// URL of this build entry
+func (b Build) SelfLink() string {
+	return b.StringField("self_link")
+}
+
 //Source package publication history
 type SPPH struct {
 	*Value
