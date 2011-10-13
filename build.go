@@ -124,6 +124,11 @@ func (s SPPH) Archive() (a Archive) {
     return Archive{v}
 }
 
+//Get the component this package was published in (i.e. main,universe)
+func (s SPPH) Component() string {
+	return s.StringField("component_name")
+}
+
 //Gets the SPPH corresponding to a Build
 func (build Build) CurrentSourcePublicationLink() (spph SPPH, err os.Error) {
 	v, err := build.Link("current_source_publication_link").Get(nil)
