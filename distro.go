@@ -161,6 +161,12 @@ func (d Distro) ActiveMilestones() (milestones MilestoneList, err os.Error) {
 	return MilestoneList{r}, err
 }
 
+// Series returns the named series of this distribution.
+func (d Distro) Series(name string) (series DistroSeries, err os.Error) {
+	s, err := d.Location(url.QueryEscape(name)).Get(nil)
+	return DistroSeries{s}, err
+}
+
 // AllSeries returns the list of series associated with the distribution.
 func (d Distro) AllSeries() (series DistroSeriesList, err os.Error) {
 	r, err := d.Link("series_collection_link").Get(nil)
