@@ -3,7 +3,6 @@ package lpad_test
 import (
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
-	"os"
 )
 
 func (s *ModelS) TestProject(c *C) {
@@ -156,7 +155,7 @@ func (s *ModelS) TestProjectActiveMilestones(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(ms lpad.Milestone) os.Error {
+	list.For(func(ms lpad.Milestone) error {
 		names = append(names, ms.Name())
 		return nil
 	})
@@ -189,7 +188,7 @@ func (s *ModelS) TestProjectAllSeries(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(s lpad.ProjectSeries) os.Error {
+	list.For(func(s lpad.ProjectSeries) error {
 		names = append(names, s.Name())
 		return nil
 	})

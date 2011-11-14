@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	. "launchpad.net/gocheck"
-	"http"
 	"io/ioutil"
+	. "launchpad.net/gocheck"
+	"net/http"
+	"net/url"
 	"os"
 	"testing"
 	"time"
-	"url"
 )
 
 func Test(t *testing.T) {

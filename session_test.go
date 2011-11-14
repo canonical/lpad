@@ -1,10 +1,9 @@
 package lpad_test
 
 import (
-	"http"
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
-	"os"
+	"net/http"
 )
 
 var _ = Suite(&SessionS{})
@@ -20,17 +19,17 @@ type SessionI struct {
 
 type dummyAuth struct {
 	loginBaseURL string
-	loginErr     os.Error
+	loginErr     error
 	signReq      *http.Request
-	signErr      os.Error
+	signErr      error
 }
 
-func (a *dummyAuth) Login(baseURL string) os.Error {
+func (a *dummyAuth) Login(baseURL string) error {
 	a.loginBaseURL = baseURL
 	return a.loginErr
 }
 
-func (a *dummyAuth) Sign(r *http.Request) os.Error {
+func (a *dummyAuth) Sign(r *http.Request) error {
 	a.signReq = r
 	return a.signErr
 }

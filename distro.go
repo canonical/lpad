@@ -1,13 +1,12 @@
 package lpad
 
 import (
-	"os"
+	"net/url"
 	"time"
-	"url"
 )
 
 // Distro returns a distribution with the given name.
-func (root Root) Distro(name string) (distribution Distro, err os.Error) {
+func (root Root) Distro(name string) (distribution Distro, err error) {
 	r, err := root.Location("/" + url.QueryEscape(name)).Get(nil)
 	return Distro{r}, err
 }
@@ -61,7 +60,7 @@ type BranchTip struct {
 // BranchTips returns a list of all branches registered under the given
 // distribution changed after the sinceNS timestamp, provided in nanoseconds.
 // If sinceNS is zero, all branch tips in the distribution are returned.
-func (d Distro) BranchTips(sinceNS int64) (tips []BranchTip, err os.Error) {
+func (d Distro) BranchTips(sinceNS int64) (tips []BranchTip, err error) {
 	params := Params{"ws.op": "getBranchTips"}
 	if sinceNS != 0 {
 		t := time.NanosecondsToUTC(sinceNS)
@@ -138,20 +137,20 @@ func (d Distro) SetDescription(description string) {
 
 // ActiveMilestones returns the list of active milestones associated with
 // the distribution, ordered by the target date.
-func (d Distro) ActiveMilestones() (milestones MilestoneList, err os.Error) {
+func (d Distro) ActiveMilestones() (milestones MilestoneList, err error) {
 	r, err := d.Link("active_milestones_collection_link").Get(nil)
 	return MilestoneList{r}, err
 }
 
 // AllSeries returns the list of series associated with the distribution.
-func (d Distro) AllSeries() (series DistroSeriesList, err os.Error) {
+func (d Distro) AllSeries() (series DistroSeriesList, err error) {
 	r, err := d.Link("series_collection_link").Get(nil)
 	return DistroSeriesList{r}, err
 }
 
 // FocusDistroSeries returns the distribution series set as the current
 // development focus.
-func (d Distro) FocusSeries() (series DistroSeries, err os.Error) {
+func (d Distro) FocusSeries() (series DistroSeries, err error) {
 	r, err := d.Link("current_series_link").Get(nil)
 	return DistroSeries{r}, err
 }
@@ -217,8 +216,8 @@ type DistroSeriesList struct {
 // For iterates over the list of series and calls f for each one.
 // If f returns a non-nil error, iteration will stop and the error will
 // be returned as the result of For.
-func (list DistroSeriesList) For(f func(s DistroSeries) os.Error) os.Error {
-	return list.Value.For(func(r *Value) os.Error {
+func (list DistroSeriesList) For(f func(s DistroSeries) error) error {
+	return list.Value.For(func(r *Value) error {
 		f(DistroSeries{r})
 		return nil
 	})

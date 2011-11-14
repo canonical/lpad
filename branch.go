@@ -1,13 +1,11 @@
 package lpad
 
-import (
-	"os"
-)
+import "errors"
 
 // Branch returns a branch for the provided URL. The URL can be in
 // the short form lp: notation, or the web address rooted at
 // http://bazaar.launchpad.net/
-func (root Root) Branch(url string) (branch Branch, err os.Error) {
+func (root Root) Branch(url string) (branch Branch, err error) {
 	v, err := root.Location("/branches").Get(Params{"ws.op": "getByUrl", "url": url})
 	return Branch{v}, err
 }
@@ -47,9 +45,9 @@ type MergeStub struct {
 
 // ProposeMerge proposes this branch for merging on another branch by
 // creating the respective merge proposal.
-func (b Branch) ProposeMerge(stub *MergeStub) (mp MergeProposal, err os.Error) {
+func (b Branch) ProposeMerge(stub *MergeStub) (mp MergeProposal, err error) {
 	if !stub.Target.IsValid() {
-		err = os.NewError("Missing target branch")
+		err = errors.New("Missing target branch")
 	}
 	params := Params{
 		"ws.op":         "createMergeProposal",
@@ -63,6 +61,8 @@ func (b Branch) ProposeMerge(stub *MergeStub) (mp MergeProposal, err os.Error) {
 	}
 	if stub.NeedsReview {
 		params["needs_review"] = "true"
+	} else {
+		params["needs_review"] = "false"
 	}
 	if stub.PreReq.IsValid() {
 		params["prerequisite_branch"] = stub.PreReq.AbsLoc()
@@ -99,20 +99,20 @@ func (mp MergeProposal) Email() string {
 }
 
 // Source returns the source branch that has additional code to land.
-func (mp MergeProposal) Source() (branch Branch, err os.Error) {
+func (mp MergeProposal) Source() (branch Branch, err error) {
 	v, err := mp.Link("source_branch_link").Get(nil)
 	return Branch{v}, err
 }
 
 // Target returns the branch where code will land on once merged.
-func (mp MergeProposal) Target() (branch Branch, err os.Error) {
+func (mp MergeProposal) Target() (branch Branch, err error) {
 	v, err := mp.Link("target_branch_link").Get(nil)
 	return Branch{v}, err
 }
 
 // PreReq returns the branch is the base (merged or not) for the code
 // within the target branch.
-func (mp MergeProposal) PreReq() (branch Branch, err os.Error) {
+func (mp MergeProposal) PreReq() (branch Branch, err error) {
 	v, err := mp.Link("prerequisite_branch_link").Get(nil)
 	return Branch{v}, err
 }

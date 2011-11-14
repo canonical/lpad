@@ -1,12 +1,9 @@
 package lpad
 
-import (
-	"os"
-	"url"
-)
+import "net/url"
 
 // Project returns a project with the given name.
-func (root Root) Project(name string) (project Project, err os.Error) {
+func (root Root) Project(name string) (project Project, err error) {
 	r, err := root.Location("/" + url.QueryEscape(name)).Get(nil)
 	return Project{r}, err
 }
@@ -92,20 +89,20 @@ func (p Project) SetDescription(description string) {
 
 // ActiveMilestones returns the list of active milestones associated with
 // the project, ordered by the target date.
-func (p Project) ActiveMilestones() (milestones MilestoneList, err os.Error) {
+func (p Project) ActiveMilestones() (milestones MilestoneList, err error) {
 	r, err := p.Link("active_milestones_collection_link").Get(nil)
 	return MilestoneList{r}, err
 }
 
 // AllSeries returns the list of series associated with the project.
-func (p Project) AllSeries() (series ProjectSeriesList, err os.Error) {
+func (p Project) AllSeries() (series ProjectSeriesList, err error) {
 	r, err := p.Link("series_collection_link").Get(nil)
 	return ProjectSeriesList{r}, err
 }
 
 // FocusSeries returns the development series set as the current
 // development focus.
-func (p Project) FocusSeries() (series ProjectSeries, err os.Error) {
+func (p Project) FocusSeries() (series ProjectSeries, err error) {
 	r, err := p.Link("development_focus_link").Get(nil)
 	return ProjectSeries{r}, err
 }
@@ -193,8 +190,8 @@ type MilestoneList struct {
 // For iterates over the list of milestones and calls f for each one.
 // If f returns a non-nil error, iteration will stop and the error will
 // be returned as the result of For.
-func (list MilestoneList) For(f func(m Milestone) os.Error) os.Error {
-	return list.Value.For(func(r *Value) os.Error {
+func (list MilestoneList) For(f func(m Milestone) error) error {
+	return list.Value.For(func(r *Value) error {
 		f(Milestone{r})
 		return nil
 	})
@@ -233,7 +230,7 @@ func (s ProjectSeries) Active() bool {
 }
 
 // Branch returns the Bazaar branch associated with this project series.
-func (s ProjectSeries) Branch() (branch Branch, err os.Error) {
+func (s ProjectSeries) Branch() (branch Branch, err error) {
 	r, err := s.Link("branch_link").Get(nil)
 	return Branch{r}, err
 }
@@ -272,8 +269,8 @@ type ProjectSeriesList struct {
 // For iterates over the list of series and calls f for each one.
 // If f returns a non-nil error, iteration will stop and the error will
 // be returned as the result of For.
-func (list ProjectSeriesList) For(f func(s ProjectSeries) os.Error) os.Error {
-	return list.Value.For(func(r *Value) os.Error {
+func (list ProjectSeriesList) For(f func(s ProjectSeries) error) error {
+	return list.Value.For(func(r *Value) error {
 		f(ProjectSeries{r})
 		return nil
 	})

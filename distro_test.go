@@ -3,17 +3,16 @@ package lpad_test
 import (
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
-	"os"
 )
 
 func (s *ModelS) TestDistro(c *C) {
 	m := M{
-		"name":                   "thename",
-		"display_name":           "Display Name",
-		"title":                  "Title",
-		"summary":                "Summary",
-		"description":            "Description",
-		"web_link":               "http://page",
+		"name":                "thename",
+		"display_name":        "Display Name",
+		"title":               "Title",
+		"summary":             "Summary",
+		"description":         "Description",
+		"web_link":            "http://page",
 		"current_series_link": testServer.URL + "/focus_link",
 	}
 	distro := lpad.Distro{lpad.NewValue(nil, "", "", m)}
@@ -46,11 +45,11 @@ func (s *ModelS) TestDistro(c *C) {
 
 func (s *ModelS) TestDistroSeries(c *C) {
 	m := M{
-		"name":        "thename",
-		"title":       "Title",
-		"summary":     "Summary",
-		"is_active":   true,
-		"web_link":    "http://page",
+		"name":      "thename",
+		"title":     "Title",
+		"summary":   "Summary",
+		"is_active": true,
+		"web_link":  "http://page",
 	}
 
 	series := lpad.DistroSeries{lpad.NewValue(nil, "", "", m)}
@@ -108,7 +107,7 @@ func (s *ModelS) TestDistroActiveMilestones(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(ms lpad.Milestone) os.Error {
+	list.For(func(ms lpad.Milestone) error {
 		names = append(names, ms.Name())
 		return nil
 	})
@@ -141,7 +140,7 @@ func (s *ModelS) TestDistroAllSeries(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(s lpad.DistroSeries) os.Error {
+	list.For(func(s lpad.DistroSeries) error {
 		names = append(names, s.Name())
 		return nil
 	})

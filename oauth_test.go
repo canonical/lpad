@@ -1,15 +1,16 @@
 package lpad_test
 
 import (
-	"http"
+	"encoding/json"
+	"errors"
 	"io/ioutil"
-	"json"
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
-	"url"
 )
 
 var _ = Suite(&OAuthS{})
@@ -25,9 +26,9 @@ type OAuthI struct {
 
 func (s *OAuthS) TestRequestToken(c *C) {
 	gotAuthURL := ""
-	callback := func(oauth *lpad.OAuth) os.Error {
+	callback := func(oauth *lpad.OAuth) error {
 		gotAuthURL = oauth.AuthURL
-		return os.NewError("STOP!")
+		return errors.New("STOP!")
 	}
 	oauth := lpad.OAuth{
 		Callback: callback,
@@ -55,8 +56,8 @@ func (s *OAuthS) TestBaseURLStripping(c *C) {
 	// https://api.launchpad.net/1.0/ as a BaseURL must
 	// yield a https://launchpad.net/ BaseURL for auth.
 
-	callback := func(oauth *lpad.OAuth) os.Error {
-		return os.NewError("STOP!")
+	callback := func(oauth *lpad.OAuth) error {
+		return errors.New("STOP!")
 	}
 	oauth := lpad.OAuth{
 		Callback: callback,
@@ -78,8 +79,8 @@ func (s *OAuthS) TestBaseURLStripping(c *C) {
 }
 
 func (s *OAuthS) TestRequestTokenWithConsumer(c *C) {
-	callback := func(oauth *lpad.OAuth) os.Error {
-		return os.NewError("STOP!")
+	callback := func(oauth *lpad.OAuth) error {
+		return errors.New("STOP!")
 	}
 	oauth := lpad.OAuth{
 		Callback: callback,
@@ -97,9 +98,9 @@ func (s *OAuthS) TestRequestTokenWithConsumer(c *C) {
 
 func (s *OAuthS) TestCallbackURL(c *C) {
 	gotAuthURL := ""
-	callback := func(oauth *lpad.OAuth) os.Error {
+	callback := func(oauth *lpad.OAuth) error {
 		gotAuthURL = oauth.AuthURL
-		return os.NewError("STOP!")
+		return errors.New("STOP!")
 	}
 	oauth := lpad.OAuth{
 		CallbackURL: "http://example.com",
@@ -184,9 +185,9 @@ func (s *OAuthS) TestSignError(c *C) {
 }
 
 func (s *OAuthS) TestDontLoginWithExistingSecret(c *C) {
-	callback := func(oauth *lpad.OAuth) os.Error {
+	callback := func(oauth *lpad.OAuth) error {
 		c.Error("Callback called!")
-		return os.NewError("STOP!")
+		return errors.New("STOP!")
 	}
 	oauth := lpad.OAuth{
 		Token:       "initialtoken",

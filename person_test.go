@@ -3,7 +3,6 @@ package lpad_test
 import (
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
-	"os"
 )
 
 func (s *ModelS) TestRootMe(c *C) {
@@ -86,7 +85,7 @@ func (s *ModelS) TestRootFindMembers(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(v lpad.AnyValue) os.Error {
+	list.For(func(v lpad.AnyValue) error {
 		if v.BoolField("is_team") {
 			t := v.(lpad.Team)
 			names = append(names, t.DisplayName())
@@ -124,7 +123,7 @@ func (s *ModelS) TestRootFindPeople(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(p lpad.Person) os.Error {
+	list.For(func(p lpad.Person) error {
 		names = append(names, p.DisplayName())
 		return nil
 	})
@@ -158,7 +157,7 @@ func (s *ModelS) TestRootFindTeams(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(t lpad.Team) os.Error {
+	list.For(func(t lpad.Team) error {
 		names = append(names, t.DisplayName())
 		return nil
 	})

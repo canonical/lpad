@@ -1,9 +1,5 @@
 package lpad
 
-import (
-	"os"
-)
-
 // The Blueprint type represents a blueprint in Launchpad.
 type Blueprint struct {
 	*Value
@@ -68,7 +64,7 @@ func (bp Blueprint) WebPage() string {
 }
 
 // LinkBranch associates a branch with this blueprint.
-func (bp Blueprint) LinkBranch(branch Branch) os.Error {
+func (bp Blueprint) LinkBranch(branch Branch) error {
 	params := Params{
 		"ws.op":  "linkBranch",
 		"branch": branch.AbsLoc(),

@@ -1,7 +1,6 @@
 package lpad
 
 import (
-	"os"
 	"strconv"
 	"strings"
 )
@@ -17,13 +16,13 @@ type BugStub struct {
 }
 
 // CreateBug creates a new bug with an appropriate bug task and returns it.
-func (root Root) Bug(id int) (bug Bug, err os.Error) {
+func (root Root) Bug(id int) (bug Bug, err error) {
 	v, err := root.Location("/bugs/" + strconv.Itoa(id)).Get(nil)
 	return Bug{v}, err
 }
 
 // CreateBug creates a new bug with an appropriate bug task and returns it.
-func (root Root) CreateBug(stub *BugStub) (bug Bug, err os.Error) {
+func (root Root) CreateBug(stub *BugStub) (bug Bug, err error) {
 	params := Params{
 		"ws.op":       "createBug",
 		"title":       stub.Title,
@@ -116,7 +115,7 @@ func (bug Bug) SetSecurityRelated(related bool) {
 }
 
 // LinkBranch associates a branch with this bug.
-func (bug Bug) LinkBranch(branch Branch) os.Error {
+func (bug Bug) LinkBranch(branch Branch) error {
 	params := Params{
 		"ws.op":  "linkBranch",
 		"branch": branch.AbsLoc(),
@@ -173,13 +172,13 @@ func (task BugTask) Importance() Importance {
 }
 
 // Assignee returns the person currently assigned to work on the task.
-func (task BugTask) Assignee() (person Person, err os.Error) {
+func (task BugTask) Assignee() (person Person, err error) {
 	v, err := task.Link("assignee_link").Get(nil)
 	return Person{v}, err
 }
 
 // Milestone returns the milestone the task is currently targeted at.
-func (task BugTask) Milestone() (ms Milestone, err os.Error) {
+func (task BugTask) Milestone() (ms Milestone, err error) {
 	v, err := task.Link("milestone_link").Get(nil)
 	return Milestone{v}, err
 }
@@ -214,15 +213,15 @@ type BugTaskList struct {
 // For iterates over the list of bug tasks and calls f for each one.
 // If f returns a non-nil error, iteration will stop and the error will
 // be returned as the result of For.
-func (list BugTaskList) For(f func(bt BugTask) os.Error) os.Error {
-	return list.Value.For(func(v *Value) os.Error {
+func (list BugTaskList) For(f func(bt BugTask) error) error {
+	return list.Value.For(func(v *Value) error {
 		f(BugTask{v})
 		return nil
 	})
 }
 
 // Tasks returns the list of bug tasks associated with the bug.
-func (bug Bug) Tasks() (list BugTaskList, err os.Error) {
+func (bug Bug) Tasks() (list BugTaskList, err error) {
 	v, err := bug.Link("bug_tasks_collection_link").Get(nil)
 	return BugTaskList{v}, err
 }

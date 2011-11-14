@@ -1,13 +1,13 @@
 package lpad_test
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
-	"json"
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
-	"os"
+	"net/url"
 	"strconv"
-	"url"
 )
 
 var _ = Suite(&ValueS{})
@@ -424,7 +424,7 @@ func (s *ValueS) TestCollection(c *C) {
 	c.Assert(v.StartIndex(), Equals, 1)
 
 	i := 1
-	err = v.For(func(v *lpad.Value) os.Error {
+	err = v.For(func(v *lpad.Value) error {
 		c.Assert(v.Map()["self_link"], Equals, "http://self"+strconv.Itoa(i))
 		i++
 		return nil
@@ -453,7 +453,7 @@ func (s *ValueS) TestCollectionGetError(c *C) {
 	c.Assert(err, IsNil)
 
 	i := 0
-	err = v.For(func(v *lpad.Value) os.Error {
+	err = v.For(func(v *lpad.Value) error {
 		i++
 		return nil
 	})
@@ -470,7 +470,7 @@ func (s *ValueS) TestCollectionNoEntries(c *C) {
 	c.Assert(err, IsNil)
 
 	i := 0
-	err = v.For(func(v *lpad.Value) os.Error {
+	err = v.For(func(v *lpad.Value) error {
 		i++
 		return nil
 	})
@@ -491,9 +491,9 @@ func (s *ValueS) TestCollectionIterError(c *C) {
 	c.Assert(err, IsNil)
 
 	i := 0
-	err = v.For(func(v *lpad.Value) os.Error {
+	err = v.For(func(v *lpad.Value) error {
 		i++
-		return os.NewError("Stop!")
+		return errors.New("Stop!")
 	})
 	c.Assert(err, Matches, "Stop!")
 	c.Assert(i, Equals, 1)

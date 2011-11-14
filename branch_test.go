@@ -127,7 +127,7 @@ func (s *ModelS) TestBranchProposeMergePreReq(c *C) {
 	c.Assert(req.URL.Path, Equals, "/~joe/ensemble/some-branch")
 	c.Assert(req.Form["commit_message"], Equals, []string{})
 	c.Assert(req.Form["initial_comment"], Equals, []string{})
-	c.Assert(req.Form["needs_review"], Equals, []string{})
+	c.Assert(req.Form["needs_review"], Equals, []string{"false"})
 	c.Assert(req.Form["target_branch"], Equals, []string{target.AbsLoc()})
 	c.Assert(req.Form["prerequisite_branch"], Equals, []string{prereq.AbsLoc()})
 }

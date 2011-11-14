@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	"launchpad.net/lpad"
-	"os"
 )
 
-func check(err os.Error) {
+func check(err error) {
 	if err != nil {
 		panic(err)
 	}
@@ -23,21 +22,21 @@ func main() {
 	fmt.Printf("%#v\n", v.Map())
 
 	//check(err)
-//
-//	list, err := root.FindTeams("ensemble")
-//	check(err)
-//
-//	fmt.Printf("Found %d members.\n", list.TotalSize())
-//
-//	i := 0
-//	err = list.For(func(t lpad.Team) os.Error {
-//		fmt.Printf("%s\n", t.DisplayName())
-//		i++
-//		return nil
-//	})
-//	check(err)
-//
-//	fmt.Printf("Had %d results, iterated over %d.\n", list.TotalSize(), i)
+	//
+	//	list, err := root.FindTeams("ensemble")
+	//	check(err)
+	//
+	//	fmt.Printf("Found %d members.\n", list.TotalSize())
+	//
+	//	i := 0
+	//	err = list.For(func(t lpad.Team) os.Error {
+	//		fmt.Printf("%s\n", t.DisplayName())
+	//		i++
+	//		return nil
+	//	})
+	//	check(err)
+	//
+	//	fmt.Printf("Had %d results, iterated over %d.\n", list.TotalSize(), i)
 
 	//me, err := root.Me()
 	//check(err)

@@ -3,7 +3,6 @@ package lpad_test
 import (
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
-	"os"
 )
 
 func (s *ModelS) TestBug(c *C) {
@@ -199,7 +198,7 @@ func (s *ModelS) TestBugTasks(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	status := []lpad.Status{}
-	list.For(func(task lpad.BugTask) os.Error {
+	list.For(func(task lpad.BugTask) error {
 		status = append(status, task.Status())
 		return nil
 	})
