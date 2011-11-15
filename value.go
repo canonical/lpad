@@ -291,7 +291,7 @@ func (v *Value) For(f func(*Value) error) (err error) {
 	return nil
 }
 
-var stopRedir = errors.New("Stop redirection marker.")
+var stopRedir = errors.New("marker")
 
 var httpClient = http.Client{
 	CheckRedirect: func(req *http.Request, via []*http.Request) error { return stopRedir },
@@ -316,6 +316,8 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 			query = ""
 			ctype = "application/x-www-form-urlencoded"
 		} else {
+			req.URL.Raw = ""
+			req.URL.RawPath = ""
 			if req.URL.RawQuery != "" {
 				req.URL.RawQuery += "&"
 			}

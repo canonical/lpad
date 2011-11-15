@@ -37,7 +37,7 @@ func (s *OAuthS) TestRequestToken(c *C) {
 	testServer.PrepareResponse(200, nil, "oauth_token=mytoken&oauth_token_secret=mysecret")
 
 	err := oauth.Login(testServer.URL)
-	c.Assert(err, Matches, "STOP!")
+	c.Assert(err, ErrorMatches, "STOP!")
 	c.Assert(gotAuthURL, Equals, testServer.URL+"/+authorize-token?oauth_token=mytoken")
 	c.Assert(oauth.BaseURL, Equals, testServer.URL)
 
@@ -74,7 +74,7 @@ func (s *OAuthS) TestBaseURLStripping(c *C) {
 	c.Assert(url_.String(), Matches, `http://api\..*/1\.0/`)
 	err = oauth.Login(url_.String())
 
-	c.Assert(err, Matches, "STOP!")
+	c.Assert(err, ErrorMatches, "STOP!")
 	c.Assert(oauth.BaseURL, Equals, testServer.URL)
 }
 
@@ -90,7 +90,7 @@ func (s *OAuthS) TestRequestTokenWithConsumer(c *C) {
 	testServer.PrepareResponse(200, nil, "oauth_token=mytoken&oauth_token_secret=mysecret")
 
 	err := oauth.Login(testServer.URL)
-	c.Assert(err, Matches, "STOP!")
+	c.Assert(err, ErrorMatches, "STOP!")
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Form["oauth_consumer_key"], Equals, []string{"myconsumer"})
@@ -110,7 +110,7 @@ func (s *OAuthS) TestCallbackURL(c *C) {
 	testServer.PrepareResponse(200, nil, "oauth_token=mytoken&oauth_token_secret=mysecret")
 
 	err := oauth.Login(testServer.URL)
-	c.Assert(err, Matches, "STOP!")
+	c.Assert(err, ErrorMatches, "STOP!")
 	c.Assert(gotAuthURL, Equals, testServer.URL+"/+authorize-token?oauth_token=mytoken&oauth_callback=http%3A%2F%2Fexample.com")
 }
 
@@ -179,9 +179,9 @@ func (s *OAuthS) TestSignWithConsumer(c *C) {
 
 func (s *OAuthS) TestSignError(c *C) {
 	err := (&lpad.OAuth{}).Sign(nil)
-	c.Assert(err, Matches, `OAuth can't Sign without a token \(missing Login\?\)`)
+	c.Assert(err, ErrorMatches, `OAuth can't Sign without a token \(missing Login\?\)`)
 	err = (&lpad.OAuth{Token: "mytoken"}).Sign(nil)
-	c.Assert(err, Matches, `OAuth can't Sign without a token secret \(missing Login\?\)`)
+	c.Assert(err, ErrorMatches, `OAuth can't Sign without a token secret \(missing Login\?\)`)
 }
 
 func (s *OAuthS) TestDontLoginWithExistingSecret(c *C) {
@@ -261,5 +261,5 @@ func (s *OAuthS) TestStoredOAuthLogin(c *C) {
 
 func (s *OAuthS) TestStoredOAuthSignForwards(c *C) {
 	err := (&lpad.StoredOAuth{}).Sign(nil)
-	c.Assert(err, Matches, `OAuth can't Sign without a token \(missing Login\?\)`)
+	c.Assert(err, ErrorMatches, `OAuth can't Sign without a token \(missing Login\?\)`)
 }

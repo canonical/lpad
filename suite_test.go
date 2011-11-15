@@ -111,7 +111,6 @@ func (s *TestHTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	req.Body = ioutil.NopCloser(bytes.NewBuffer(data))
 	s.request <- req
 	var resp *testResponse
 	select {
@@ -130,6 +129,8 @@ func (s *TestHTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(resp.Status)
 	}
 	w.Write([]byte(resp.Body))
+	// WriteHeader consumes the body per RFC2616. Restore it.
+	req.Body = ioutil.NopCloser(bytes.NewBuffer(data))
 }
 
 func (s *TestHTTPServer) WaitRequest() *http.Request {
