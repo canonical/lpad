@@ -69,7 +69,7 @@ func (oauth *OAuth) requestToken(path string, form url.Values) (err error) {
 	return
 }
 
-func (oauth *OAuth) Login(baseURL string) (err error) {
+func (oauth *OAuth) Login(baseURL string) error {
 	if oauth.BaseURL == "" {
 		url, err := url.Parse(baseURL)
 		if err != nil {
@@ -95,8 +95,7 @@ func (oauth *OAuth) Login(baseURL string) (err error) {
 		"oauth_signature_method": []string{"PLAINTEXT"},
 		"oauth_signature":        []string{"&"},
 	}
-	err = oauth.requestToken("/+request-token", form)
-	if err != nil {
+	if err := oauth.requestToken("/+request-token", form); err != nil {
 		return err
 	}
 
@@ -109,8 +108,7 @@ func (oauth *OAuth) Login(baseURL string) (err error) {
 	oauth.AuthURL = oauth.BaseURL + "/+authorize-token?" + authQuery.Encode()
 
 	if oauth.Callback != nil {
-		err = oauth.Callback(oauth)
-		if err != nil {
+		if err := oauth.Callback(oauth); err != nil {
 			return err
 		}
 	}
@@ -118,8 +116,7 @@ func (oauth *OAuth) Login(baseURL string) (err error) {
 	form["oauth_token"] = []string{oauth.Token}
 	form["oauth_signature"] = []string{"&" + oauth.TokenSecret}
 
-	err = oauth.requestToken("/+access-token", form)
-	if err != nil {
+	if err := oauth.requestToken("/+access-token", form); err != nil {
 		return err
 	}
 

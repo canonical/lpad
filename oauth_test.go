@@ -111,7 +111,15 @@ func (s *OAuthS) TestCallbackURL(c *C) {
 
 	err := oauth.Login(testServer.URL)
 	c.Assert(err, ErrorMatches, "STOP!")
-	c.Assert(gotAuthURL, Equals, testServer.URL+"/+authorize-token?oauth_token=mytoken&oauth_callback=http%3A%2F%2Fexample.com")
+
+	u, err := url.Parse(gotAuthURL)
+	c.Assert(err, IsNil)
+	c.Assert(u.Path, Equals, "/+authorize-token")
+
+	q, err := url.ParseQuery(u.RawQuery)
+	c.Assert(err, IsNil)
+	c.Assert(q["oauth_token"], Equals, []string{"mytoken"})
+	c.Assert(q["oauth_callback"], Equals, []string{"http://example.com"})
 }
 
 func (s *OAuthS) TestAccessToken(c *C) {

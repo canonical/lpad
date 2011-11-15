@@ -11,60 +11,78 @@ type Root struct {
 }
 
 // Me returns the Person authenticated into Lauchpad in the current session.
-func (root Root) Me() (p Person, err error) {
+func (root *Root) Me() (*Person, error) {
 	me, err := root.Location("/people/+me").Get(nil)
-	return Person{me}, err
+	if err != nil {
+		return nil, err
+	}
+	return &Person{me}, nil
 }
 
 // Person returns the Person with the provided username.
-func (root Root) Person(username string) (p Person, err error) {
+func (root *Root) Person(username string) (*Person, error) {
 	v, err := root.Location("/~" + url.QueryEscape(username)).Get(nil)
-	if err == nil && v.BoolField("is_team") {
-		err = errors.New(username + " is a team, not a person")
+	if err != nil {
+		return nil, err
 	}
-	return Person{v}, err
+	if v.BoolField("is_team") {
+		return nil, errors.New(username + " is a team, not a person")
+	}
+	return &Person{v}, nil
 }
 
 // Team returns the Team with the provided name.
-func (root Root) Team(name string) (p Team, err error) {
+func (root *Root) Team(name string) (*Team, error) {
 	v, err := root.Location("/~" + url.QueryEscape(name)).Get(nil)
-	if err == nil && !v.BoolField("is_team") {
+	if err != nil {
+		return nil, err
+	}
+	if !v.BoolField("is_team") {
 		err = errors.New(name + " is not a team")
 	}
-	return Team{v}, err
+	return &Team{v}, nil
 }
 
 // Member returns the Team or Person with the provided name or username.
-func (root Root) Member(name string) (member AnyValue, err error) {
+func (root *Root) Member(name string) (member AnyValue, err error) {
 	v, err := root.Location("/~" + url.QueryEscape(name)).Get(nil)
 	if err != nil {
 		return nil, err
 	}
 	if v.BoolField("is_team") {
-		return Team{v}, nil
+		return &Team{v}, nil
 	}
-	return Person{v}, nil
+	return &Person{v}, nil
 }
 
 // FindPeople returns a PersonList containing all Person accounts whose
 // Name, DisplayName or email address match text.
-func (root Root) FindPeople(text string) (list PersonList, err error) {
+func (root *Root) FindPeople(text string) (*PersonList, error) {
 	v, err := root.Location("/people").Get(Params{"ws.op": "findPerson", "text": text})
-	return PersonList{v}, err
+	if err != nil {
+		return nil, err
+	}
+	return &PersonList{v}, nil
 }
 
 // FindTeams returns a TeamList containing all Team accounts whose
 // Name, DisplayName or email address match text.
-func (root Root) FindTeams(text string) (list TeamList, err error) {
+func (root *Root) FindTeams(text string) (*TeamList, error) {
 	v, err := root.Location("/people").Get(Params{"ws.op": "findTeam", "text": text})
-	return TeamList{v}, err
+	if err != nil {
+		return nil, err
+	}
+	return &TeamList{v}, nil
 }
 
 // FindMembers returns a MemberList containing all Person or Team accounts
 // whose Name, DisplayName or email address match text.
-func (root Root) FindMembers(text string) (list MemberList, err error) {
+func (root *Root) FindMembers(text string) (*MemberList, error) {
 	v, err := root.Location("/people").Get(Params{"ws.op": "find", "text": text})
-	return MemberList{v}, err
+	if err != nil {
+		return nil, err
+	}
+	return &MemberList{v}, nil
 }
 
 // The MemberList type encapsulates a mixed list containing Person and Team
@@ -76,14 +94,12 @@ type MemberList struct {
 // For iterates over the list of people and teams and calls f for each one.
 // If f returns a non-nil error, iteration will stop and the error will be
 // returned as the result of For.
-func (list MemberList) For(f func(v AnyValue) error) error {
+func (list *MemberList) For(f func(v AnyValue) error) error {
 	return list.Value.For(func(v *Value) error {
 		if v.BoolField("is_team") {
-			f(Team{v})
-		} else {
-			f(Person{v})
+			return f(&Team{v})
 		}
-		return nil
+		return f(&Person{v})
 	})
 }
 
@@ -95,10 +111,9 @@ type PersonList struct {
 // For iterates over the list of people and calls f for each one.  If f
 // returns a non-nil error, iteration will stop and the error will be
 // returned as the result of For.
-func (list PersonList) For(f func(p Person) error) error {
+func (list *PersonList) For(f func(p *Person) error) error {
 	return list.Value.For(func(v *Value) error {
-		f(Person{v})
-		return nil
+		return f(&Person{v})
 	})
 }
 
@@ -110,10 +125,9 @@ type TeamList struct {
 // For iterates over the list of teams and calls f for each one.  If f
 // returns a non-nil error, iteration will stop and the error will be
 // returned as the result of For.
-func (list TeamList) For(f func(t Team) error) error {
+func (list *TeamList) For(f func(t *Team) error) error {
 	return list.Value.For(func(v *Value) error {
-		f(Team{v})
-		return nil
+		return f(&Team{v})
 	})
 }
 
@@ -124,30 +138,30 @@ type Person struct {
 
 // DisplayName returns the person's name as it would be displayed
 // throughout Launchpad.  Most people use their full name.
-func (person Person) DisplayName() string {
+func (person *Person) DisplayName() string {
 	return person.StringField("display_name")
 }
 
 // WebPage returns the URL for accessing this person's page in a browser.
-func (person Person) WebPage() string {
+func (person *Person) WebPage() string {
 	return person.StringField("web_link")
 }
 
 // SetDisplayName changes the person's name as it would be displayed
 // throughout Launchpad.  Most people use their full name.
 // Patch must be called to commit all changes.
-func (person Person) SetDisplayName(name string) {
+func (person *Person) SetDisplayName(name string) {
 	person.SetField("display_name", name)
 }
 
 // IRCNicks returns a list of all IRC nicks for the person.
-func (person Person) IRCNicks() (nicks []IRCNick, err error) {
+func (person *Person) IRCNicks() (nicks []*IRCNick, err error) {
 	list, err := person.Link("irc_nicknames_collection_link").Get(nil)
 	if err != nil {
 		return nil, err
 	}
 	list.For(func(v *Value) error {
-		nicks = append(nicks, IRCNick{v})
+		nicks = append(nicks, &IRCNick{v})
 		return nil
 	})
 	return
@@ -158,24 +172,24 @@ type IRCNick struct {
 }
 
 // Nick returns the person's nick on an IRC network.
-func (nick IRCNick) Nick() string {
+func (nick *IRCNick) Nick() string {
 	return nick.StringField("nickname")
 }
 
 // SetNick changes the person's nick on an IRC network.
 // Patch must be called to commit all changes.
-func (nick IRCNick) SetNick(n string) {
+func (nick *IRCNick) SetNick(n string) {
 	nick.SetField("nickname", n)
 }
 
 // Network returns the IRC network this nick is associated to.
-func (nick IRCNick) Network() string {
+func (nick *IRCNick) Network() string {
 	return nick.StringField("network")
 }
 
 // SetNetwork changes the IRC network this nick is associated to.
 // Patch must be called to commit all changes.
-func (nick IRCNick) SetNetwork(n string) {
+func (nick *IRCNick) SetNetwork(n string) {
 	nick.SetField("network", n)
 }
 
@@ -187,30 +201,30 @@ type Team struct {
 // Name returns the team's name.  This is a short unique name, beginning with a
 // lower-case letter or number, and containing only letters, numbers, dots,
 // hyphens, or plus signs.
-func (team Team) Name() string {
+func (team *Team) Name() string {
 	return team.StringField("name")
 }
 
 // SetName changes the team's name.  This is a short unique name, beginning
 // with a lower-case letter or number, and containing only letters, numbers,
 // dots, hyphens, or plus signs.  Patch must be called to commit all changes.
-func (team Team) SetName(name string) {
+func (team *Team) SetName(name string) {
 	team.SetField("name", name)
 }
 
 // DisplayName returns the team's name as it would be displayed
 // throughout Launchpad.
-func (team Team) DisplayName() string {
+func (team *Team) DisplayName() string {
 	return team.StringField("display_name")
 }
 
 // SetDisplayName changes the team's name as it would be displayed
 // throughout Launchpad.  Patch must be called to commit all changes.
-func (team Team) SetDisplayName(name string) {
+func (team *Team) SetDisplayName(name string) {
 	team.SetField("display_name", name)
 }
 
 // WebPage returns the URL for accessing this team's page in a browser.
-func (team Team) WebPage() string {
+func (team *Team) WebPage() string {
 	return team.StringField("web_link")
 }

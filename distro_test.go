@@ -15,7 +15,7 @@ func (s *ModelS) TestDistro(c *C) {
 		"web_link":            "http://page",
 		"current_series_link": testServer.URL + "/focus_link",
 	}
-	distro := lpad.Distro{lpad.NewValue(nil, "", "", m)}
+	distro := &lpad.Distro{lpad.NewValue(nil, "", "", m)}
 	c.Assert(distro.Name(), Equals, "thename")
 	c.Assert(distro.DisplayName(), Equals, "Display Name")
 	c.Assert(distro.Title(), Equals, "Title")
@@ -52,7 +52,7 @@ func (s *ModelS) TestDistroSeries(c *C) {
 		"web_link":  "http://page",
 	}
 
-	series := lpad.DistroSeries{lpad.NewValue(nil, "", "", m)}
+	series := &lpad.DistroSeries{lpad.NewValue(nil, "", "", m)}
 	c.Assert(series.Name(), Equals, "thename")
 	c.Assert(series.Title(), Equals, "Title")
 	c.Assert(series.Summary(), Equals, "Summary")
@@ -107,7 +107,7 @@ func (s *ModelS) TestDistroActiveMilestones(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(ms lpad.Milestone) error {
+	list.For(func(ms *lpad.Milestone) error {
 		names = append(names, ms.Name())
 		return nil
 	})
@@ -140,7 +140,7 @@ func (s *ModelS) TestDistroAllSeries(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(s lpad.DistroSeries) error {
+	list.For(func(s *lpad.DistroSeries) error {
 		names = append(names, s.Name())
 		return nil
 	})

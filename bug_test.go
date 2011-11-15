@@ -15,7 +15,7 @@ func (s *ModelS) TestBug(c *C) {
 		"security_related": true,
 		"web_link":         "http://page",
 	}
-	bug := lpad.Bug{lpad.NewValue(nil, "", "", m)}
+	bug := &lpad.Bug{lpad.NewValue(nil, "", "", m)}
 	c.Assert(bug.Id(), Equals, 123456)
 	c.Assert(bug.Title(), Equals, "Title")
 	c.Assert(bug.Description(), Equals, "Description")
@@ -42,7 +42,7 @@ func (s *ModelS) TestBugTask(c *C) {
 		"status":         "New",
 		"importance":     "High",
 	}
-	task := lpad.BugTask{lpad.NewValue(nil, "", "", m)}
+	task := &lpad.BugTask{lpad.NewValue(nil, "", "", m)}
 
 	c.Assert(task.Status(), Equals, lpad.StNew)
 	c.Assert(task.Importance(), Equals, lpad.ImHigh)
@@ -70,8 +70,8 @@ func (s *ModelS) TestBugTask(c *C) {
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/milestone_link")
 
-	milestone = lpad.Milestone{lpad.NewValue(nil, "", "/new_milestone_link", nil)}
-	assignee = lpad.Person{lpad.NewValue(nil, "", "/new_assignee_link", nil)}
+	milestone = &lpad.Milestone{lpad.NewValue(nil, "", "/new_milestone_link", nil)}
+	assignee = &lpad.Person{lpad.NewValue(nil, "", "/new_assignee_link", nil)}
 
 	task.SetMilestone(milestone)
 	task.SetAssignee(assignee)
@@ -90,7 +90,7 @@ func (s *ModelS) TestRootBug(c *C) {
 		"tags": "a b c"
 	}`
 	testServer.PrepareResponse(200, jsonType, data)
-	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
+	root := &lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
 	bug, err := root.Bug(123456)
 	c.Assert(err, IsNil)
 	c.Assert(bug.Title(), Equals, "Title")
@@ -110,8 +110,8 @@ func (s *ModelS) TestRootCreateBug(c *C) {
 		"tags": "a b c"
 	}`
 	testServer.PrepareResponse(200, jsonType, data)
-	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
-	stub := lpad.BugStub{
+	root := &lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
+	stub := &lpad.BugStub{
 		Title:           "Title",
 		Description:     "Description.",
 		Private:         true,
@@ -119,7 +119,7 @@ func (s *ModelS) TestRootCreateBug(c *C) {
 		Tags:            []string{"a", "b", "c"},
 		Target:          lpad.NewValue(nil, "", "http://target", nil),
 	}
-	bug, err := root.CreateBug(&stub)
+	bug, err := root.CreateBug(stub)
 	c.Assert(err, IsNil)
 	c.Assert(bug.Title(), Equals, "Title")
 
@@ -142,13 +142,13 @@ func (s *ModelS) TestRootCreateBugNoTags(c *C) {
 		"title": "Title"
 	}`
 	testServer.PrepareResponse(200, jsonType, data)
-	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
-	stub := lpad.BugStub{
+	root := &lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
+	stub := &lpad.BugStub{
 		Title:       "Title",
 		Description: "Description.",
 		Target:      lpad.NewValue(nil, "", "http://target", nil),
 	}
-	bug, err := root.CreateBug(&stub)
+	bug, err := root.CreateBug(stub)
 	c.Assert(err, IsNil)
 	c.Assert(bug.Title(), Equals, "Title")
 
@@ -163,8 +163,8 @@ func (s *ModelS) TestRootCreateBugNoTags(c *C) {
 
 func (s *ModelS) TestBugLinkBranch(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{}`)
-	bug := lpad.Bug{lpad.NewValue(nil, "", testServer.URL+"/bugs/123456", nil)}
-	branch := lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL+"~joe/ensemble/some-branch", nil)}
+	bug := &lpad.Bug{lpad.NewValue(nil, "", testServer.URL+"/bugs/123456", nil)}
+	branch := &lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL+"~joe/ensemble/some-branch", nil)}
 
 	err := bug.LinkBranch(branch)
 	c.Assert(err, IsNil)
@@ -189,16 +189,14 @@ func (s *ModelS) TestBugTasks(c *C) {
 		}]
 	}`
 	testServer.PrepareResponse(200, jsonType, data)
-	m := M{
-		"bug_tasks_collection_link": testServer.URL + "/col_link",
-	}
-	bug := lpad.Bug{lpad.NewValue(nil, testServer.URL, "", m)}
+	m := M{"bug_tasks_collection_link": testServer.URL + "/col_link"}
+	bug := &lpad.Bug{lpad.NewValue(nil, testServer.URL, "", m)}
 	list, err := bug.Tasks()
 	c.Assert(err, IsNil)
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	status := []lpad.Status{}
-	list.For(func(task lpad.BugTask) error {
+	list.For(func(task *lpad.BugTask) error {
 		status = append(status, task.Status())
 		return nil
 	})

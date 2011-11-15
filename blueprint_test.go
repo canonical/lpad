@@ -13,7 +13,7 @@ func (s *ModelS) TestBlueprint(c *C) {
 		"whiteboard": "Whiteboard",
 		"web_link":   "http://page",
 	}
-	project := lpad.Blueprint{lpad.NewValue(nil, "", "", m)}
+	project := &lpad.Blueprint{lpad.NewValue(nil, "", "", m)}
 	c.Assert(project.Name(), Equals, "thename")
 	c.Assert(project.Title(), Equals, "Title")
 	c.Assert(project.Summary(), Equals, "Summary")
@@ -40,7 +40,7 @@ func (s *ModelS) TestBlueprint(c *C) {
 
 func (s *ModelS) TestBlueprintLinkBranch(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{}`)
-	bp := lpad.Blueprint{lpad.NewValue(nil, "", testServer.URL+"/project/+spec/the-bp", nil)}
+	bp := &lpad.Blueprint{lpad.NewValue(nil, "", testServer.URL+"/project/+spec/the-bp", nil)}
 	branch := lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL+"~joe/ensemble/some-branch", nil)}
 
 	err := bp.LinkBranch(branch)

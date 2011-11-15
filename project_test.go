@@ -15,7 +15,7 @@ func (s *ModelS) TestProject(c *C) {
 		"web_link":               "http://page",
 		"development_focus_link": testServer.URL + "/focus_link",
 	}
-	project := lpad.Project{lpad.NewValue(nil, "", "", m)}
+	project := &lpad.Project{lpad.NewValue(nil, "", "", m)}
 	c.Assert(project.Name(), Equals, "thename")
 	c.Assert(project.DisplayName(), Equals, "Display Name")
 	c.Assert(project.Title(), Equals, "Title")
@@ -54,7 +54,7 @@ func (s *ModelS) TestMilestone(c *C) {
 		"web_link":      "http://page",
 	}
 
-	ms := lpad.Milestone{lpad.NewValue(nil, "", "", m)}
+	ms := &lpad.Milestone{lpad.NewValue(nil, "", "", m)}
 	c.Assert(ms.Name(), Equals, "thename")
 	c.Assert(ms.CodeName(), Equals, "thecodename")
 	c.Assert(ms.Title(), Equals, "Title")
@@ -86,7 +86,7 @@ func (s *ModelS) TestProjectSeries(c *C) {
 		"branch_link": testServer.URL + "/branch_link",
 	}
 
-	series := lpad.ProjectSeries{lpad.NewValue(nil, "", "", m)}
+	series := &lpad.ProjectSeries{lpad.NewValue(nil, "", "", m)}
 	c.Assert(series.Name(), Equals, "thename")
 	c.Assert(series.Title(), Equals, "Title")
 	c.Assert(series.Summary(), Equals, "Summary")
@@ -111,7 +111,7 @@ func (s *ModelS) TestProjectSeries(c *C) {
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/branch_link")
 
-	b = lpad.Branch{lpad.NewValue(nil, "", "/new_branch_link", nil)}
+	b = &lpad.Branch{lpad.NewValue(nil, "", "/new_branch_link", nil)}
 	series.SetBranch(b)
 	c.Assert(series.StringField("branch_link"), Equals, "/new_branch_link")
 }
@@ -123,7 +123,7 @@ func (s *ModelS) TestRootProject(c *C) {
 		"description": "Description"
 	}`
 	testServer.PrepareResponse(200, jsonType, data)
-	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
+	root := &lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
 	project, err := root.Project("myproj")
 	c.Assert(err, IsNil)
 	c.Assert(project.Name(), Equals, "Name")
@@ -146,16 +146,14 @@ func (s *ModelS) TestProjectActiveMilestones(c *C) {
 		}]
 	}`
 	testServer.PrepareResponse(200, jsonType, data)
-	m := M{
-		"active_milestones_collection_link": testServer.URL + "/col_link",
-	}
-	project := lpad.Project{lpad.NewValue(nil, testServer.URL, "", m)}
+	m := M{"active_milestones_collection_link": testServer.URL + "/col_link"}
+	project := &lpad.Project{lpad.NewValue(nil, testServer.URL, "", m)}
 	list, err := project.ActiveMilestones()
 	c.Assert(err, IsNil)
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(ms lpad.Milestone) error {
+	list.For(func(ms *lpad.Milestone) error {
 		names = append(names, ms.Name())
 		return nil
 	})
@@ -179,16 +177,14 @@ func (s *ModelS) TestProjectAllSeries(c *C) {
 		}]
 	}`
 	testServer.PrepareResponse(200, jsonType, data)
-	m := M{
-		"series_collection_link": testServer.URL + "/col_link",
-	}
-	project := lpad.Project{lpad.NewValue(nil, testServer.URL, "", m)}
+	m := M{"series_collection_link": testServer.URL + "/col_link"}
+	project := &lpad.Project{lpad.NewValue(nil, testServer.URL, "", m)}
 	list, err := project.AllSeries()
 	c.Assert(err, IsNil)
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(s lpad.ProjectSeries) error {
+	list.For(func(s *lpad.ProjectSeries) error {
 		names = append(names, s.Name())
 		return nil
 	})

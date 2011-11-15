@@ -66,11 +66,10 @@ func (s *Session) Sign(req *http.Request) (err error) {
 //     }
 //     fmt.Println(me.DisplayName())
 //
-func Login(baseurl APIBase, auth Auth) (root Root, err error) {
+func Login(baseurl APIBase, auth Auth) (*Root, error) {
 	baseloc := string(baseurl)
-	err = auth.Login(baseloc)
-	if err != nil {
-		return
+	if err := auth.Login(baseloc); err != nil {
+		return nil, err
 	}
-	return Root{&Value{session: NewSession(auth), baseloc: baseloc, loc: baseloc}}, nil
+	return &Root{&Value{session: NewSession(auth), baseloc: baseloc, loc: baseloc}}, nil
 }
