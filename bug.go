@@ -136,45 +136,45 @@ type BugTask struct {
 	*Value
 }
 
-type Importance string
+type BugImportance string
 
 const (
-	ImUnknown   Importance = "Unknown"
-	ImCritical  Importance = "Critical"
-	ImHigh      Importance = "High"
-	ImMedium    Importance = "Medium"
-	ImLow       Importance = "Low"
-	ImWishlist  Importance = "Wishlist"
-	ImUndecided Importance = "Undecided"
+	ImUnknown   BugImportance = "Unknown"
+	ImCritical  BugImportance = "Critical"
+	ImHigh      BugImportance = "High"
+	ImMedium    BugImportance = "Medium"
+	ImLow       BugImportance = "Low"
+	ImWishlist  BugImportance = "Wishlist"
+	ImUndecided BugImportance = "Undecided"
 )
 
-type Status string
+type BugStatus string
 
 const (
-	StUnknown      Status = "Unknown"
-	StNew          Status = "New"
-	StIncomplete   Status = "Incomplete"
-	StOpinion      Status = "Opinion"
-	StInvalid      Status = "Invalid"
-	StWontFix      Status = "Won't fix"
-	StExpired      Status = "Expired"
-	StConfirmed    Status = "Confirmed"
-	StTriaged      Status = "Triaged"
-	StInProgress   Status = "In Progress"
-	StFixCommitted Status = "Fix Committed"
-	StFixReleased  Status = "Fix Released"
+	StUnknown      BugStatus = "Unknown"
+	StNew          BugStatus = "New"
+	StIncomplete   BugStatus = "Incomplete"
+	StOpinion      BugStatus = "Opinion"
+	StInvalid      BugStatus = "Invalid"
+	StWontFix      BugStatus = "Won't fix"
+	StExpired      BugStatus = "Expired"
+	StConfirmed    BugStatus = "Confirmed"
+	StTriaged      BugStatus = "Triaged"
+	StInProgress   BugStatus = "In Progress"
+	StFixCommitted BugStatus = "Fix Committed"
+	StFixReleased  BugStatus = "Fix Released"
 )
 
 // Status returns the current status for the bug task. See
 // the Status type for supported values.
-func (task *BugTask) Status() Status {
-	return Status(task.StringField("status"))
+func (task *BugTask) Status() BugStatus {
+	return BugStatus(task.StringField("status"))
 }
 
 // Importance returns the current importance for the bug task. See
 // the Importance type for supported values.
-func (task *BugTask) Importance() Importance {
-	return Importance(task.StringField("importance"))
+func (task *BugTask) Importance() BugImportance {
+	return BugImportance(task.StringField("importance"))
 }
 
 // Assignee returns the person currently assigned to work on the task.
@@ -197,13 +197,13 @@ func (task *BugTask) Milestone() (*Milestone, error) {
 
 // SetStatus changes the current status for the bug task. See
 // the Status type for supported values.
-func (task *BugTask) SetStatus(status Status) {
+func (task *BugTask) SetStatus(status BugStatus) {
 	task.SetField("status", string(status))
 }
 
 // Importance changes the current importance for the bug task. See
 // the Importance type for supported values.
-func (task *BugTask) SetImportance(importance Importance) {
+func (task *BugTask) SetImportance(importance BugImportance) {
 	task.SetField("importance", string(importance))
 }
 

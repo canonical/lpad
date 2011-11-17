@@ -47,9 +47,16 @@ func (s *ModelS) TestMergeProposal(c *C) {
 	mp := &lpad.MergeProposal{lpad.NewValue(nil, "", "", m)}
 	c.Assert(mp.Description(), Equals, "Description")
 	c.Assert(mp.CommitMessage(), Equals, "Commit message")
-	c.Assert(mp.Status(), Equals, "Needs review")
+	c.Assert(mp.Status(), Equals, lpad.StNeedsReview)
 	c.Assert(mp.Email(), Equals, "some@email.com")
 	c.Assert(mp.WebPage(), Equals, "http://page")
+
+	mp.SetDescription("New description")
+	mp.SetStatus(lpad.StApproved)
+	mp.SetCommitMessage("New message")
+	c.Assert(mp.Description(), Equals, "New description")
+	c.Assert(mp.CommitMessage(), Equals, "New message")
+	c.Assert(mp.Status(), Equals, lpad.StApproved)
 
 	testServer.PrepareResponse(200, jsonType, `{"unique_name": "branch1"}`)
 	testServer.PrepareResponse(200, jsonType, `{"unique_name": "branch2"}`)

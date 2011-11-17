@@ -101,21 +101,53 @@ type MergeProposal struct {
 	*Value
 }
 
-// Description returns the merge proposal introductory comment.
+// Description returns the detailed description of the changes being
+// proposed in the source branch of the merge proposal.
 func (mp *MergeProposal) Description() string {
 	return mp.StringField("description")
 }
 
+// SetDescription changes the detailed description of the changes being
+// proposed in the source branch of the merge proposal.
+func (mp *MergeProposal) SetDescription(description string) {
+	mp.SetField("description", description)
+}
+
+type MergeProposalStatus string
+
+const (
+	StWorkInProgress MergeProposalStatus = "Work in progress"
+	StNeedsReview    MergeProposalStatus = "Needs review"
+	StApproved       MergeProposalStatus = "Approved"
+	StRejected       MergeProposalStatus = "Rejected"
+	StMerged         MergeProposalStatus = "Merged"
+	StFailedToMerge  MergeProposalStatus = "Code failed to merge"
+	StQueued         MergeProposalStatus = "Queued"
+	StSuperseded     MergeProposalStatus = "Superseded"
+)
+
 // Status returns the current status of the merge proposal.
 // E.g. Needs review, Work In Progress, etc.
-func (mp *MergeProposal) Status() string {
-	return mp.StringField("queue_status")
+func (mp *MergeProposal) Status() MergeProposalStatus {
+	return MergeProposalStatus(mp.StringField("queue_status"))
+}
+
+// SetStatus changes the current status of the merge proposal.
+// Patch must be called to commit all changes.
+func (mp *MergeProposal) SetStatus(status MergeProposalStatus) {
+	mp.SetField("queue_status", string(status))
 }
 
 // CommitMessage returns the commit message to be used when merging
-// the proposal.
+// the source branch onto the target branch.
 func (mp *MergeProposal) CommitMessage() string {
 	return mp.StringField("commit_message")
+}
+
+// SetCommitMessage changes the commit message to be used when
+// merging the source branch onto the target branch.
+func (mp *MergeProposal) SetCommitMessage(msg string) {
+	mp.SetField("commit_message", msg)
 }
 
 // Email returns the unique email that may be used to add new comments
@@ -172,4 +204,3 @@ func (list *MergeProposalList) For(f func(t *MergeProposal) error) error {
 		return f(&MergeProposal{v})
 	})
 }
-
