@@ -159,14 +159,14 @@ func (s *ModelS) TestBranchTips(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(tips, Equals, []lpad.BranchTip{
 		{"lp:a", "rev1", []string{"series1", "series2"}},
-		{"lp:b", "rev2", nil},
+		{"lp:b", "rev2", []string{}},
 	})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/distro")
 	c.Assert(req.Form["ws.op"], Equals, []string{"getBranchTips"})
-	c.Assert(req.Form["since"], Equals, []string{})
+	c.Assert(req.Form["since"], Equals, []string(nil))
 }
 
 func (s *ModelS) TestBranchTipsWithSince(c *C) {
@@ -174,7 +174,7 @@ func (s *ModelS) TestBranchTipsWithSince(c *C) {
 	distro := lpad.Distro{lpad.NewValue(nil, testServer.URL, testServer.URL+"/distro", nil)}
 	tips, err := distro.BranchTips(1316567786e9)
 	c.Assert(err, IsNil)
-	c.Assert(tips, Equals, []lpad.BranchTip{})
+	c.Assert(tips, Equals, []lpad.BranchTip(nil))
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")

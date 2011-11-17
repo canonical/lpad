@@ -33,6 +33,47 @@ func (b *Branch) UniqueName() string {
 	return b.StringField("unique_name")
 }
 
+// OwnerName returns the name from the owner of this branch.
+func (b *Branch) OwnerName() string {
+	un := b.UniqueName()
+	var i, j int
+	for i = 0; i+3 < len(un); i++ {
+		if un[i+1] == '~' && (un[i] == ':' || un[i] == '/') {
+			break
+		}
+	}
+	i += 2
+	for j = i; j < len(un); j++ {
+		if un[j] == '/' {
+			return un[i:j]
+		}
+	}
+	panic("can't find owner name in unique_name: " + un)
+}
+
+// ProjectName returns the name for the project this branch is part of.
+func (b *Branch) ProjectName() string {
+	un := b.UniqueName()
+	var i, j int
+	for i = 0; i+3 < len(un); i++ {
+		if un[i+1] == '~' && (un[i] == ':' || un[i] == '/') {
+			break
+		}
+	}
+	for j = i+2; j < len(un); j++ {
+		if un[j] == '/' {
+			break
+		}
+	}
+	i = j+1
+	for j = i; j < len(un); j++ {
+		if un[j] == '/' {
+			return un[i:j]
+		}
+	}
+	panic("can't find project name in unique_name: " + un)
+}
+
 // WebPage returns the URL for accessing this branch in a browser.
 func (b *Branch) WebPage() string {
 	return b.StringField("web_link")

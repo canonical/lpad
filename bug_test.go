@@ -195,12 +195,12 @@ func (s *ModelS) TestBugTasks(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(list.TotalSize(), Equals, 2)
 
-	status := []lpad.Status{}
+	status := []lpad.BugStatus{}
 	list.For(func(task *lpad.BugTask) error {
 		status = append(status, task.Status())
 		return nil
 	})
-	c.Assert(status, Equals, []lpad.Status{lpad.StNew, lpad.StUnknown})
+	c.Assert(status, Equals, []lpad.BugStatus{lpad.StNew, lpad.StUnknown})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
