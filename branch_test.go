@@ -33,6 +33,18 @@ func (s *ModelS) TestRootBranch(c *C) {
 	c.Assert(req.URL.Path, Equals, "/branches")
 	c.Assert(req.Form["ws.op"], Equals, []string{"getByUrl"})
 	c.Assert(req.Form["url"], Equals, []string{"lp:~joe/project/branch-name"})
+
+	testServer.PrepareResponse(200, jsonType, data)
+	_, err = root.Branch("bzr+ssh://bazaar.launchpad.net/%2Bbranch/foo")
+	c.Assert(err, IsNil)
+	req = testServer.WaitRequest()
+	c.Assert(req.Form["url"], Equals, []string{"lp:foo"})
+
+	testServer.PrepareResponse(200, jsonType, data)
+	_, err = root.Branch("bzr+ssh://bazaar.launchpad.net/~branch/foo")
+	c.Assert(err, IsNil)
+	req = testServer.WaitRequest()
+	c.Assert(req.Form["url"], Equals, []string{"lp:foo"})
 }
 
 func (s *ModelS) TestMergeProposal(c *C) {

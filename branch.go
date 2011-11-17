@@ -1,11 +1,22 @@
 package lpad
 
 import "errors"
+import "strings"
+
+var weirdPrefixes = []string{
+	"bzr+ssh://bazaar.launchpad.net/%2Bbranch/",
+	"bzr+ssh://bazaar.launchpad.net/~branch/",
+}
 
 // Branch returns a branch for the provided URL. The URL can be in
 // the short form lp: notation, or the web address rooted at
 // http://bazaar.launchpad.net/
 func (root *Root) Branch(url string) (*Branch, error) {
+	for _, prefix := range weirdPrefixes {
+		if strings.HasPrefix(url, prefix) {
+			url = "lp:" + url[len(prefix):]
+		}
+	}
 	v, err := root.Location("/branches").Get(Params{"ws.op": "getByUrl", "url": url})
 	if err != nil {
 		return nil, err
