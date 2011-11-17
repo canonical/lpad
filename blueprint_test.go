@@ -41,7 +41,7 @@ func (s *ModelS) TestBlueprint(c *C) {
 func (s *ModelS) TestBlueprintLinkBranch(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{}`)
 	bp := &lpad.Blueprint{lpad.NewValue(nil, "", testServer.URL+"/project/+spec/the-bp", nil)}
-	branch := lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL+"~joe/ensemble/some-branch", nil)}
+	branch := &lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL+"~joe/ensemble/some-branch", nil)}
 
 	err := bp.LinkBranch(branch)
 	c.Assert(err, IsNil)
@@ -51,4 +51,19 @@ func (s *ModelS) TestBlueprintLinkBranch(c *C) {
 	c.Assert(req.URL.Path, Equals, "/project/+spec/the-bp")
 	c.Assert(req.Form["ws.op"], Equals, []string{"linkBranch"})
 	c.Assert(req.Form["branch"], Equals, []string{branch.AbsLoc()})
+}
+
+func (s *ModelS) TestBlueprintLinkBug(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{}`)
+	bp := &lpad.Blueprint{lpad.NewValue(nil, "", testServer.URL+"/project/+spec/the-bp", nil)}
+	bug := &lpad.Bug{lpad.NewValue(nil, testServer.URL, testServer.URL+"~joe/ensemble/some-bug", nil)}
+
+	err := bp.LinkBug(bug)
+	c.Assert(err, IsNil)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "POST")
+	c.Assert(req.URL.Path, Equals, "/project/+spec/the-bp")
+	c.Assert(req.Form["ws.op"], Equals, []string{"linkBug"})
+	c.Assert(req.Form["bug"], Equals, []string{bug.AbsLoc()})
 }

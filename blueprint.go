@@ -64,10 +64,20 @@ func (bp *Blueprint) WebPage() string {
 }
 
 // LinkBranch associates a branch with this blueprint.
-func (bp *Blueprint) LinkBranch(branch Branch) error {
+func (bp *Blueprint) LinkBranch(branch *Branch) error {
 	params := Params{
 		"ws.op":  "linkBranch",
 		"branch": branch.AbsLoc(),
+	}
+	_, err := bp.Post(params)
+	return err
+}
+
+// LinkBug associates a bug with this blueprint.
+func (bp *Blueprint) LinkBug(bug *Bug) error {
+	params := Params{
+		"ws.op": "linkBug",
+		"bug":   bug.AbsLoc(),
 	}
 	_, err := bp.Post(params)
 	return err
