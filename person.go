@@ -149,6 +149,20 @@ func (person *Person) SetDisplayName(name string) {
 	person.SetField("display_name", name)
 }
 
+// Name returns the person's short unique name, beginning with a
+// lower-case letter or number, and containing only letters, numbers,
+// dots, hyphens, or plus signs.
+func (person *Person) Name() string {
+	return person.StringField("name")
+}
+
+// SetName changes the person's short unique name.
+// The name must begin with a lower-case letter or number, and
+// contain only letters, numbers, dots, hyphens, or plus signs.
+func (person *Person) SetName(name string) {
+	person.SetField("name", name)
+}
+
 // WebPage returns the URL for accessing this person's page in a browser.
 func (person *Person) WebPage() string {
 	return person.StringField("web_link")

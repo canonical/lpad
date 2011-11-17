@@ -172,14 +172,18 @@ func (s *ModelS) TestRootFindTeams(c *C) {
 
 func (s *ModelS) TestPerson(c *C) {
 	m := M{
+		"name":         "joe",
 		"display_name": "Joe",
 		"web_link":     "http://page",
 	}
 	person := &lpad.Person{lpad.NewValue(nil, "", "", m)}
+	c.Assert(person.Name(), Equals, "joe")
 	c.Assert(person.DisplayName(), Equals, "Joe")
 	c.Assert(person.WebPage(), Equals, "http://page")
-	person.SetDisplayName("Name")
-	c.Assert(person.DisplayName(), Equals, "Name")
+	person.SetName("newname")
+	person.SetDisplayName("New Name")
+	c.Assert(person.Name(), Equals, "newname")
+	c.Assert(person.DisplayName(), Equals, "New Name")
 }
 
 func (s *ModelS) TestTeam(c *C) {
