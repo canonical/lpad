@@ -18,8 +18,12 @@ func main() {
 	check(err)
 	fmt.Println(me.DisplayName())
 
-	v, err := root.GetLocation("/bugs/123456")
-	fmt.Printf("%#v\n", v.Map())
+	//v, err := root.GetLocation("/bugs/123456")
+	//fmt.Printf("%#v\n", v.Map())
+
+	b, err := root.Branch("bzr+ssh://bazaar.launchpad.net/%2Bbranch/lbox/")
+	check(err)
+	println(b.UniqueName())
 
 	//check(err)
 	//

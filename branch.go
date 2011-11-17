@@ -15,6 +15,7 @@ func (root *Root) Branch(url string) (*Branch, error) {
 	for _, prefix := range weirdPrefixes {
 		if strings.HasPrefix(url, prefix) {
 			url = "lp:" + url[len(prefix):]
+			break
 		}
 	}
 	v, err := root.Location("/branches").Get(Params{"ws.op": "getByUrl", "url": url})
@@ -47,16 +48,11 @@ func (b *Branch) UniqueName() string {
 // OwnerName returns the name from the owner of this branch.
 func (b *Branch) OwnerName() string {
 	un := b.UniqueName()
-	var i, j int
-	for i = 0; i+3 < len(un); i++ {
-		if un[i+1] == '~' && (un[i] == ':' || un[i] == '/') {
-			break
-		}
-	}
-	i += 2
-	for j = i; j < len(un); j++ {
-		if un[j] == '/' {
-			return un[i:j]
+	if len(un) > 0 && un[0] == '~' {
+		for i := 0; i < len(un); i++ {
+			if un[i] == '/' {
+				return un[1:i]
+			}
 		}
 	}
 	panic("can't find owner name in unique_name: " + un)
@@ -65,20 +61,20 @@ func (b *Branch) OwnerName() string {
 // ProjectName returns the name for the project this branch is part of.
 func (b *Branch) ProjectName() string {
 	un := b.UniqueName()
-	var i, j int
-	for i = 0; i+3 < len(un); i++ {
-		if un[i+1] == '~' && (un[i] == ':' || un[i] == '/') {
-			break
+	if len(un) > 0 && un[0] == '~' {
+		var i, j int
+		for i = 0; i < len(un); i++ {
+			if un[i] == '/' {
+				break
+			}
 		}
-	}
-	for j = i+2; j < len(un); j++ {
-		if un[j] == '/' {
-			break
-		}
-	}
-	i = j+1
-	for j = i; j < len(un); j++ {
-		if un[j] == '/' {
+		i++
+		if i < len(un) {
+			for j = i; j < len(un); j++ {
+				if un[j] == '/' {
+					break
+				}
+			}
 			return un[i:j]
 		}
 	}

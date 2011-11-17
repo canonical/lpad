@@ -8,26 +8,26 @@ import (
 func (s *ModelS) TestBranch(c *C) {
 	m := M{
 		"bzr_identity": "lp:~joe/ensemble",
-		"unique_name":  "lp:~joe/ensemble/some-branch",
+		"unique_name":  "~joe/ensemble/some-branch",
 		"web_link":     "http://page",
 	}
 	branch := &lpad.Branch{lpad.NewValue(nil, "", "", m)}
 	c.Assert(branch.Id(), Equals, "lp:~joe/ensemble")
-	c.Assert(branch.UniqueName(), Equals, "lp:~joe/ensemble/some-branch")
+	c.Assert(branch.UniqueName(), Equals, "~joe/ensemble/some-branch")
 	c.Assert(branch.WebPage(), Equals, "http://page")
 	c.Assert(branch.OwnerName(), Equals, "joe")
 	c.Assert(branch.ProjectName(), Equals, "ensemble")
 }
 
 func (s *ModelS) TestRootBranch(c *C) {
-	data := `{"unique_name": "lp:branch"}`
+	data := `{"unique_name": "~branch"}`
 	testServer.PrepareResponse(200, jsonType, data)
 
 	root := lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
 
 	branch, err := root.Branch("lp:~joe/project/branch-name")
 	c.Assert(err, IsNil)
-	c.Assert(branch.UniqueName(), Equals, "lp:branch")
+	c.Assert(branch.UniqueName(), Equals, "~branch")
 
 	req := testServer.WaitRequest()
 	c.Assert(req.URL.Path, Equals, "/branches")
