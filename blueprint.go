@@ -1,5 +1,26 @@
 package lpad
 
+import (
+	"fmt"
+)
+
+
+// BlueprintTarget is implemented by types that may be used as
+// targets for blueprints, such as *Project and *Distro.
+type BlueprintTarget interface {
+	Name() string
+	BlueprintTarget()
+}
+
+// Blueprint returns the named blueprint associated with target.
+func (root *Root) Blueprint(target BlueprintTarget, name string) (*Blueprint, error) {
+	v, err := root.Location(fmt.Sprintf("/%s/+spec/%s", target.Name(), name)).Get(nil)
+	if err != nil {
+		return nil, err
+	}
+	return &Blueprint{v}, nil
+}
+
 // The Blueprint type represents a blueprint in Launchpad.
 type Blueprint struct {
 	*Value

@@ -5,6 +5,29 @@ import (
 	"launchpad.net/lpad"
 )
 
+func (s *ModelS) TestRootBlueprint(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{"name": "bp-name"}`)
+	testServer.PrepareResponse(200, jsonType, `{"name": "bp-name"}`)
+
+	root := &lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
+	project := &lpad.Project{lpad.NewValue(nil, "", "", M{"name": "myproject"})}
+	distro := &lpad.Distro{lpad.NewValue(nil, "", "", M{"name": "mydistro"})}
+
+	blueprint, err := root.Blueprint(project, "bp-param")
+	c.Assert(err, IsNil)
+	c.Assert(blueprint.Name(), Equals, "bp-name")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.URL.Path, Equals, "/myproject/+spec/bp-param")
+
+	blueprint, err = root.Blueprint(distro, "bp-param")
+	c.Assert(err, IsNil)
+	c.Assert(blueprint.Name(), Equals, "bp-name")
+
+	req = testServer.WaitRequest()
+	c.Assert(req.URL.Path, Equals, "/mydistro/+spec/bp-param")
+}
+
 func (s *ModelS) TestBlueprint(c *C) {
 	m := M{
 		"name":       "thename",

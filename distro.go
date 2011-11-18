@@ -54,6 +54,9 @@ func (d *Distro) WebPage() string {
 	return d.StringField("web_link")
 }
 
+// BlueprintTarget marks *Distro as being a target for blueprints. 
+func (p *Distro) BlueprintTarget() {}
+
 type BranchTip struct {
 	UniqueName     string
 	Revision       string

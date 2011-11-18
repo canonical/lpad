@@ -119,6 +119,9 @@ func (p *Project) FocusSeries() (*ProjectSeries, error) {
 	return &ProjectSeries{r}, nil
 }
 
+// BlueprintTarget marks *Project as being a target for blueprints. 
+func (p *Project) BlueprintTarget() {}
+
 // The Milestone type represents a milestone associated with a project
 // or distribution.
 type Milestone struct {
