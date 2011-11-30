@@ -1,17 +1,18 @@
 package lpad
 
 import (
-	"exec"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"http"
 	"io/ioutil"
-	"json"
+	"math/rand"
+	"net/http"
+	"net/url"
 	"os"
-	"rand"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
-	"url"
 )
 
 // The OAuth type enables authenticated sessions to be established with
@@ -23,12 +24,12 @@ import (
 //     https://help.launchpad.net/API/SigningRequests
 //
 type OAuth struct {
-	BaseURL            string                // Defaults to https://(staging.)launchpad.net/
-	AuthURL            string                // Set by Login before Callback is called
-	Callback           func(*OAuth) os.Error // Called by Login to get user to AuthURL
-	CallbackURL        string                // Optional. AuthURL will redirect here after confirmation
-	Token, TokenSecret string                // Credentials obtained
-	Consumer           string                // Consumer name. Defaults to "https://launchpad.net/lpad"
+	BaseURL            string             // Defaults to https://(staging.)launchpad.net/
+	AuthURL            string             // Set by Login before Callback is called
+	Callback           func(*OAuth) error // Called by Login to get user to AuthURL
+	CallbackURL        string             // Optional. AuthURL will redirect here after confirmation
+	Token, TokenSecret string             // Credentials obtained
+	Consumer           string             // Consumer name. Defaults to "https://launchpad.net/lpad"
 }
 
 func (oauth *OAuth) consumer() string {
@@ -38,7 +39,7 @@ func (oauth *OAuth) consumer() string {
 	return oauth.Consumer
 }
 
-func (oauth *OAuth) requestToken(path string, form url.Values) (err os.Error) {
+func (oauth *OAuth) requestToken(path string, form url.Values) (err error) {
 	r, err := http.PostForm(oauth.BaseURL+path, form)
 	if err != nil {
 		return
@@ -55,12 +56,12 @@ func (oauth *OAuth) requestToken(path string, form url.Values) (err os.Error) {
 
 	token, ok := query["oauth_token"]
 	if !ok || len(token) == 0 {
-		return os.NewError("oauth_token missing from " + path + " response: " + string(data))
+		return errors.New("oauth_token missing from " + path + " response: " + string(data))
 	}
 
 	secret, ok := query["oauth_token_secret"]
 	if !ok || len(secret) == 0 {
-		return os.NewError("oauth_token_secret missing from " + path + " response: " + string(data))
+		return errors.New("oauth_token_secret missing from " + path + " response: " + string(data))
 	}
 
 	oauth.Token = token[0]
@@ -68,7 +69,7 @@ func (oauth *OAuth) requestToken(path string, form url.Values) (err os.Error) {
 	return
 }
 
-func (oauth *OAuth) Login(baseURL string) (err os.Error) {
+func (oauth *OAuth) Login(baseURL string) error {
 	if oauth.BaseURL == "" {
 		url, err := url.Parse(baseURL)
 		if err != nil {
@@ -94,8 +95,7 @@ func (oauth *OAuth) Login(baseURL string) (err os.Error) {
 		"oauth_signature_method": []string{"PLAINTEXT"},
 		"oauth_signature":        []string{"&"},
 	}
-	err = oauth.requestToken("/+request-token", form)
-	if err != nil {
+	if err := oauth.requestToken("/+request-token", form); err != nil {
 		return err
 	}
 
@@ -108,8 +108,7 @@ func (oauth *OAuth) Login(baseURL string) (err os.Error) {
 	oauth.AuthURL = oauth.BaseURL + "/+authorize-token?" + authQuery.Encode()
 
 	if oauth.Callback != nil {
-		err = oauth.Callback(oauth)
-		if err != nil {
+		if err := oauth.Callback(oauth); err != nil {
 			return err
 		}
 	}
@@ -117,8 +116,7 @@ func (oauth *OAuth) Login(baseURL string) (err os.Error) {
 	form["oauth_token"] = []string{oauth.Token}
 	form["oauth_signature"] = []string{"&" + oauth.TokenSecret}
 
-	err = oauth.requestToken("/+access-token", form)
-	if err != nil {
+	if err := oauth.requestToken("/+access-token", form); err != nil {
 		return err
 	}
 
@@ -126,12 +124,12 @@ func (oauth *OAuth) Login(baseURL string) (err os.Error) {
 	return nil
 }
 
-func (oauth *OAuth) Sign(req *http.Request) os.Error {
+func (oauth *OAuth) Sign(req *http.Request) error {
 	if oauth.Token == "" {
-		return os.NewError("OAuth can't Sign without a token (missing Login?)")
+		return errors.New("OAuth can't Sign without a token (missing Login?)")
 	}
 	if oauth.TokenSecret == "" {
-		return os.NewError("OAuth can't Sign without a token secret (missing Login?)")
+		return errors.New("OAuth can't Sign without a token secret (missing Login?)")
 	}
 
 	auth := `OAuth realm="https://api.launchpad.net/", ` +
@@ -162,7 +160,7 @@ type oauthDump struct {
 	Token, TokenSecret string
 }
 
-func (oauth *StoredOAuth) Login(baseURL string) os.Error {
+func (oauth *StoredOAuth) Login(baseURL string) error {
 	if oauth.TokenSecret == "" && oauth.read() == nil {
 		return nil
 	}
@@ -173,11 +171,11 @@ func (oauth *StoredOAuth) Login(baseURL string) os.Error {
 	return oauth.write()
 }
 
-func (oauth *StoredOAuth) Sign(req *http.Request) os.Error {
+func (oauth *StoredOAuth) Sign(req *http.Request) error {
 	return (*OAuth)(oauth).Sign(req)
 }
 
-func (oauth *StoredOAuth) read() os.Error {
+func (oauth *StoredOAuth) read() error {
 	path := os.ShellExpand("$HOME/.lpad_oauth")
 	if oauth.TokenSecret != "" {
 		return nil
@@ -187,6 +185,7 @@ func (oauth *StoredOAuth) read() os.Error {
 		return err
 	}
 	data, err := ioutil.ReadAll(file)
+	file.Close()
 	if err != nil {
 		return err
 	}
@@ -200,7 +199,7 @@ func (oauth *StoredOAuth) read() os.Error {
 	return nil
 }
 
-func (oauth *StoredOAuth) write() os.Error {
+func (oauth *StoredOAuth) write() error {
 	path := os.ShellExpand("$HOME/.lpad_oauth")
 	file, err := os.Create(path)
 	if err != nil {
@@ -228,7 +227,7 @@ type ConsoleOAuth StoredOAuth
 // would prevent people from building ConsoleOAuth values with explicit
 // fields such as ConsoleOAuth{Callback: ...}.
 
-func (oauth *ConsoleOAuth) Login(baseURL string) os.Error {
+func (oauth *ConsoleOAuth) Login(baseURL string) error {
 	oauth.Callback = fireBrowser
 	err := (*StoredOAuth)(oauth).Login(baseURL)
 	if err != nil {
@@ -237,11 +236,11 @@ func (oauth *ConsoleOAuth) Login(baseURL string) os.Error {
 	return nil
 }
 
-func (oauth *ConsoleOAuth) Sign(req *http.Request) os.Error {
+func (oauth *ConsoleOAuth) Sign(req *http.Request) error {
 	return (*StoredOAuth)(oauth).Sign(req)
 }
 
-func fireBrowser(oauth *OAuth) os.Error {
+func fireBrowser(oauth *OAuth) error {
 	browser, err := findBrowser()
 	if err == nil {
 		args := []string{browser, oauth.AuthURL}
@@ -263,7 +262,7 @@ func fireBrowser(oauth *OAuth) os.Error {
 	return nil
 }
 
-func findBrowser() (path string, err os.Error) {
+func findBrowser() (path string, err error) {
 	path, err = exec.LookPath("sensible-browser")
 	if err == nil {
 		return path, nil

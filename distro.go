@@ -1,15 +1,17 @@
 package lpad
 
 import (
-	"os"
+	"net/url"
 	"time"
-	"url"
 )
 
 // Distro returns a distribution with the given name.
-func (root Root) Distro(name string) (distribution Distro, err os.Error) {
+func (root *Root) Distro(name string) (*Distro, error) {
 	r, err := root.Location("/" + url.QueryEscape(name)).Get(nil)
-	return Distro{r}, err
+	if err != nil {
+		return nil, err
+	}
+	return &Distro{r}, nil
 }
 
 // The Distro type represents a distribution in Launchpad.
@@ -38,37 +40,40 @@ func (list DistroList) For(fn func(d Distro) os.Error) {
 // Name returns the distribution name, which is composed of at least one
 // lowercase letter or number, followed by letters, numbers, dots,
 // hyphens or pluses. This is a short name used in URLs.
-func (d Distro) Name() string {
+func (d *Distro) Name() string {
 	return d.StringField("name")
 }
 
 // DisplayName returns the distribution name as it would be displayed
 // in a paragraph. For example, a distribution's title might be
 // "The Foo Distro" and its display name could be "Foo".
-func (d Distro) DisplayName() string {
+func (d *Distro) DisplayName() string {
 	return d.StringField("display_name")
 }
 
 // Title returns the distribution title as it might be used in isolation.
-func (d Distro) Title() string {
+func (d *Distro) Title() string {
 	return d.StringField("title")
 }
 
 // Summary returns the distribution summary, which is a short paragraph
 // to introduce the distribution's goals and highlights.
-func (d Distro) Summary() string {
+func (d *Distro) Summary() string {
 	return d.StringField("summary")
 }
 
 // Description returns the distribution description.
-func (d Distro) Description() string {
+func (d *Distro) Description() string {
 	return d.StringField("description")
 }
 
 // WebPage returns the URL for accessing this distribution in a browser.
-func (d Distro) WebPage() string {
+func (d *Distro) WebPage() string {
 	return d.StringField("web_link")
 }
+
+// BlueprintTarget marks *Distro as being a target for blueprints. 
+func (p *Distro) BlueprintTarget() {}
 
 type BranchTip struct {
 	UniqueName     string
@@ -79,7 +84,7 @@ type BranchTip struct {
 // BranchTips returns a list of all branches registered under the given
 // distribution changed after the sinceNS timestamp, provided in nanoseconds.
 // If sinceNS is zero, all branch tips in the distribution are returned.
-func (d Distro) BranchTips(sinceNS int64) (tips []BranchTip, err os.Error) {
+func (d *Distro) BranchTips(sinceNS int64) (tips []BranchTip, err error) {
 	params := Params{"ws.op": "getBranchTips"}
 	if sinceNS != 0 {
 		t := time.NanosecondsToUTC(sinceNS)
@@ -114,14 +119,14 @@ func (d Distro) BranchTips(sinceNS int64) (tips []BranchTip, err os.Error) {
 		}
 		tips = append(tips, BranchTip{url, rev, sseries})
 	}
-	return tips, err
+	return tips, nil
 }
 
 // SetName changes the distribution name, which must be composed of at
 // least one lowercase letter or number, followed by letters, numbers,
 // dots, hyphens or pluses. This is a short name used in URLs.
 // Patch must be called to commit all changes.
-func (d Distro) SetName(name string) {
+func (d *Distro) SetName(name string) {
 	d.SetField("name", name)
 }
 
@@ -129,7 +134,7 @@ func (d Distro) SetName(name string) {
 // in a paragraph. For example, a distribution's title might be
 // "The Foo Distro" and its display name could be "Foo".
 // Patch must be called to commit all changes.
-func (d Distro) SetDisplayName(name string) {
+func (d *Distro) SetDisplayName(name string) {
 	d.SetField("display_name", name)
 }
 
@@ -137,28 +142,31 @@ func (d Distro) SetDisplayName(name string) {
 // in isolation. For example, the distribution title might be
 // "The Foo Distro" and display name could be "Foo".
 // Patch must be called to commit all changes.
-func (d Distro) SetTitle(title string) {
+func (d *Distro) SetTitle(title string) {
 	d.SetField("title", title)
 }
 
 // SetSummary changes the distribution summary, which is a short paragraph
 // to introduce the distribution's goals and highlights.
 // Patch must be called to commit all changes.
-func (d Distro) SetSummary(title string) {
+func (d *Distro) SetSummary(title string) {
 	d.SetField("summary", title)
 }
 
 // SetDescription changes the distributions's description.
 // Patch must be called to commit all changes.
-func (d Distro) SetDescription(description string) {
+func (d *Distro) SetDescription(description string) {
 	d.SetField("description", description)
 }
 
 // ActiveMilestones returns the list of active milestones associated with
 // the distribution, ordered by the target date.
-func (d Distro) ActiveMilestones() (milestones MilestoneList, err os.Error) {
+func (d *Distro) ActiveMilestones() (*MilestoneList, error) {
 	r, err := d.Link("active_milestones_collection_link").Get(nil)
-	return MilestoneList{r}, err
+	if err != nil {
+		return nil, err
+	}
+	return &MilestoneList{r}, nil
 }
 
 // Series returns the named series of this distribution.
@@ -168,9 +176,12 @@ func (d Distro) Series(name string) (series DistroSeries, err os.Error) {
 }
 
 // AllSeries returns the list of series associated with the distribution.
-func (d Distro) AllSeries() (series DistroSeriesList, err os.Error) {
+func (d *Distro) AllSeries() (*DistroSeriesList, error) {
 	r, err := d.Link("series_collection_link").Get(nil)
-	return DistroSeriesList{r}, err
+	if err != nil {
+		return nil, err
+	}
+	return &DistroSeriesList{r}, nil
 }
 
 // Archives returns the archives associated with the distribution.
@@ -187,9 +198,12 @@ func (d Distro) Archive(name string) (archive Archive, err os.Error) {
 
 // FocusDistroSeries returns the distribution series set as the current
 // development focus.
-func (d Distro) FocusSeries() (series DistroSeries, err os.Error) {
+func (d *Distro) FocusSeries() (*DistroSeries, error) {
 	r, err := d.Link("current_series_link").Get(nil)
-	return DistroSeries{r}, err
+	if err != nil {
+		return nil, err
+	}
+	return &DistroSeries{r}, nil
 }
 
 // The DistroSeries type represents a series associated with a distribution.
@@ -200,7 +214,7 @@ type DistroSeries struct {
 // Name returns the series name, which is a unique name that identifies
 // it and is used in URLs. It consists of only lowercase letters, digits,
 // and simple punctuation.  For example, "2.0" or "trunk".
-func (s DistroSeries) Name() string {
+func (s *DistroSeries) Name() string {
 	return s.StringField("name")
 }
 
@@ -218,7 +232,7 @@ func (d DistroSeries) FullSeriesName() string {
 }
 
 // Title returns the series context title for pages.
-func (s DistroSeries) Title() string {
+func (s *DistroSeries) Title() string {
 	return s.StringField("title")
 }
 
@@ -228,17 +242,17 @@ func (s DistroSeries) SelfLink() string {
 }
 
 // Summary returns the summary for this distribution series.
-func (s DistroSeries) Summary() string {
+func (s *DistroSeries) Summary() string {
 	return s.StringField("summary")
 }
 
 // WebPage returns the URL for accessing this distribution series in a browser.
-func (s DistroSeries) WebPage() string {
+func (s *DistroSeries) WebPage() string {
 	return s.StringField("web_link")
 }
 
 // Active returns true if this distribution series is still in active development.
-func (s DistroSeries) Active() bool {
+func (s *DistroSeries) Active() bool {
 	return s.BoolField("active")
 }
 
@@ -263,22 +277,22 @@ func (d DistroSeries) GetBuildRecords(build_state BuildState, pocket Pocket, sou
 
 // SetName changes the series name, which must consists of only letters,
 // numbers, and simple punctuation. For example: "2.0" or "trunk".
-func (s DistroSeries) SetName(name string) {
+func (s *DistroSeries) SetName(name string) {
 	s.SetField("name", name)
 }
 
 // SetTitle changes the series title.
-func (s DistroSeries) SetTitle(title string) {
+func (s *DistroSeries) SetTitle(title string) {
 	s.SetField("title", title)
 }
 
 // SetSummary changes the summary for this distribution series.
-func (s DistroSeries) SetSummary(summary string) {
+func (s *DistroSeries) SetSummary(summary string) {
 	s.SetField("summary", summary)
 }
 
 // SetActive sets whether the series is still in active development or not.
-func (s DistroSeries) SetActive(active bool) {
+func (s *DistroSeries) SetActive(active bool) {
 	s.SetField("active", active)
 }
 
@@ -290,9 +304,8 @@ type DistroSeriesList struct {
 // For iterates over the list of series and calls f for each one.
 // If f returns a non-nil error, iteration will stop and the error will
 // be returned as the result of For.
-func (list DistroSeriesList) For(f func(s DistroSeries) os.Error) os.Error {
-	return list.Value.For(func(r *Value) os.Error {
-		f(DistroSeries{r})
-		return nil
+func (list *DistroSeriesList) For(f func(s *DistroSeries) error) error {
+	return list.Value.For(func(r *Value) error {
+		return f(&DistroSeries{r})
 	})
 }

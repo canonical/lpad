@@ -3,20 +3,19 @@ package lpad_test
 import (
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
-	"os"
 )
 
 func (s *ModelS) TestDistro(c *C) {
 	m := M{
-		"name":                   "thename",
-		"display_name":           "Display Name",
-		"title":                  "Title",
-		"summary":                "Summary",
-		"description":            "Description",
-		"web_link":               "http://page",
+		"name":                "thename",
+		"display_name":        "Display Name",
+		"title":               "Title",
+		"summary":             "Summary",
+		"description":         "Description",
+		"web_link":            "http://page",
 		"current_series_link": testServer.URL + "/focus_link",
 	}
-	distro := lpad.Distro{lpad.NewValue(nil, "", "", m)}
+	distro := &lpad.Distro{lpad.NewValue(nil, "", "", m)}
 	c.Assert(distro.Name(), Equals, "thename")
 	c.Assert(distro.DisplayName(), Equals, "Display Name")
 	c.Assert(distro.Title(), Equals, "Title")
@@ -56,7 +55,7 @@ func (s *ModelS) TestDistroSeries(c *C) {
 		"web_link":    "http://page",
 	}
 
-	series := lpad.DistroSeries{lpad.NewValue(nil, "", "", m)}
+	series := &lpad.DistroSeries{lpad.NewValue(nil, "", "", m)}
 	c.Assert(series.Name(), Equals, "thename")
 	c.Assert(series.DisplayName(), Equals, "Display Name")
 	c.Assert(series.FullSeriesName(), Equals, "Full Series Name")
@@ -114,7 +113,7 @@ func (s *ModelS) TestDistroActiveMilestones(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(ms lpad.Milestone) os.Error {
+	list.For(func(ms *lpad.Milestone) error {
 		names = append(names, ms.Name())
 		return nil
 	})
@@ -147,7 +146,7 @@ func (s *ModelS) TestDistroAllSeries(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(s lpad.DistroSeries) os.Error {
+	list.For(func(s *lpad.DistroSeries) error {
 		names = append(names, s.Name())
 		return nil
 	})
@@ -166,14 +165,14 @@ func (s *ModelS) TestBranchTips(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(tips, Equals, []lpad.BranchTip{
 		{"lp:a", "rev1", []string{"series1", "series2"}},
-		{"lp:b", "rev2", nil},
+		{"lp:b", "rev2", []string{}},
 	})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/distro")
 	c.Assert(req.Form["ws.op"], Equals, []string{"getBranchTips"})
-	c.Assert(req.Form["since"], Equals, []string{})
+	c.Assert(req.Form["since"], Equals, []string(nil))
 }
 
 func (s *ModelS) TestBranchTipsWithSince(c *C) {
@@ -181,7 +180,7 @@ func (s *ModelS) TestBranchTipsWithSince(c *C) {
 	distro := lpad.Distro{lpad.NewValue(nil, testServer.URL, testServer.URL+"/distro", nil)}
 	tips, err := distro.BranchTips(1316567786e9)
 	c.Assert(err, IsNil)
-	c.Assert(tips, Equals, []lpad.BranchTip{})
+	c.Assert(tips, Equals, []lpad.BranchTip(nil))
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")

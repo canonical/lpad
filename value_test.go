@@ -1,13 +1,13 @@
 package lpad_test
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
-	"json"
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
-	"os"
+	"net/url"
 	"strconv"
-	"url"
 )
 
 var _ = Suite(&ValueS{})
@@ -179,19 +179,19 @@ func (s *ValueS) TestGetNonJSONContent(c *C) {
 	testServer.PrepareResponse(200, headers, "NOT JSON")
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
 	_, err := v.Get(nil)
-	c.Assert(err, Matches, "Non-JSON content-type: text/plain.*")
+	c.Assert(err, ErrorMatches, "Non-JSON content-type: text/plain.*")
 }
 
 func (s *ValueS) TestGetError(c *C) {
 	testServer.PrepareResponse(500, jsonType, `{"what": "ever"}`)
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
 	_, err := v.Get(nil)
-	c.Assert(err, Matches, `Server returned 500 and body: {"what": "ever"}`)
+	c.Assert(err, ErrorMatches, `Server returned 500 and body: {"what": "ever"}`)
 
 	testServer.PrepareResponse(404, jsonType, "")
 	v = lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
 	_, err = v.Get(nil)
-	c.Assert(err, Matches, `Server returned 404 and no body.`)
+	c.Assert(err, ErrorMatches, `Server returned 404 and no body.`)
 }
 
 func (s *ValueS) TestGetRedirectWithoutLocation(c *C) {
@@ -201,7 +201,7 @@ func (s *ValueS) TestGetRedirectWithoutLocation(c *C) {
 	testServer.PrepareResponse(303, headers, `{"ok": true}`)
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
 	_, err := v.Get(nil)
-	c.Assert(err, Matches, "Get : 303 response missing Location header")
+	c.Assert(err, ErrorMatches, "Get : 303 response missing Location header")
 }
 
 func (s *ValueS) TestPost(c *C) {
@@ -424,7 +424,7 @@ func (s *ValueS) TestCollection(c *C) {
 	c.Assert(v.StartIndex(), Equals, 1)
 
 	i := 1
-	err = v.For(func(v *lpad.Value) os.Error {
+	err = v.For(func(v *lpad.Value) error {
 		c.Assert(v.Map()["self_link"], Equals, "http://self"+strconv.Itoa(i))
 		i++
 		return nil
@@ -453,11 +453,11 @@ func (s *ValueS) TestCollectionGetError(c *C) {
 	c.Assert(err, IsNil)
 
 	i := 0
-	err = v.For(func(v *lpad.Value) os.Error {
+	err = v.For(func(v *lpad.Value) error {
 		i++
 		return nil
 	})
-	c.Assert(err, Matches, ".* returned 500 .*")
+	c.Assert(err, ErrorMatches, ".* returned 500 .*")
 	c.Assert(i, Equals, 1)
 }
 
@@ -470,11 +470,11 @@ func (s *ValueS) TestCollectionNoEntries(c *C) {
 	c.Assert(err, IsNil)
 
 	i := 0
-	err = v.For(func(v *lpad.Value) os.Error {
+	err = v.For(func(v *lpad.Value) error {
 		i++
 		return nil
 	})
-	c.Assert(err, Matches, "No entries found in value")
+	c.Assert(err, ErrorMatches, "No entries found in value")
 	c.Assert(i, Equals, 0)
 }
 
@@ -491,10 +491,10 @@ func (s *ValueS) TestCollectionIterError(c *C) {
 	c.Assert(err, IsNil)
 
 	i := 0
-	err = v.For(func(v *lpad.Value) os.Error {
+	err = v.For(func(v *lpad.Value) error {
 		i++
-		return os.NewError("Stop!")
+		return errors.New("Stop!")
 	})
-	c.Assert(err, Matches, "Stop!")
+	c.Assert(err, ErrorMatches, "Stop!")
 	c.Assert(i, Equals, 1)
 }

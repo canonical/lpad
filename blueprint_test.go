@@ -5,6 +5,29 @@ import (
 	"launchpad.net/lpad"
 )
 
+func (s *ModelS) TestRootBlueprint(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{"name": "bp-name"}`)
+	testServer.PrepareResponse(200, jsonType, `{"name": "bp-name"}`)
+
+	root := &lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
+	project := &lpad.Project{lpad.NewValue(nil, "", "", M{"name": "myproject"})}
+	distro := &lpad.Distro{lpad.NewValue(nil, "", "", M{"name": "mydistro"})}
+
+	blueprint, err := root.Blueprint(project, "bp-param")
+	c.Assert(err, IsNil)
+	c.Assert(blueprint.Name(), Equals, "bp-name")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.URL.Path, Equals, "/myproject/+spec/bp-param")
+
+	blueprint, err = root.Blueprint(distro, "bp-param")
+	c.Assert(err, IsNil)
+	c.Assert(blueprint.Name(), Equals, "bp-name")
+
+	req = testServer.WaitRequest()
+	c.Assert(req.URL.Path, Equals, "/mydistro/+spec/bp-param")
+}
+
 func (s *ModelS) TestBlueprint(c *C) {
 	m := M{
 		"name":       "thename",
@@ -13,7 +36,7 @@ func (s *ModelS) TestBlueprint(c *C) {
 		"whiteboard": "Whiteboard",
 		"web_link":   "http://page",
 	}
-	project := lpad.Blueprint{lpad.NewValue(nil, "", "", m)}
+	project := &lpad.Blueprint{lpad.NewValue(nil, "", "", m)}
 	c.Assert(project.Name(), Equals, "thename")
 	c.Assert(project.Title(), Equals, "Title")
 	c.Assert(project.Summary(), Equals, "Summary")
@@ -40,8 +63,8 @@ func (s *ModelS) TestBlueprint(c *C) {
 
 func (s *ModelS) TestBlueprintLinkBranch(c *C) {
 	testServer.PrepareResponse(200, jsonType, `{}`)
-	bp := lpad.Blueprint{lpad.NewValue(nil, "", testServer.URL+"/project/+spec/the-bp", nil)}
-	branch := lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL+"~joe/ensemble/some-branch", nil)}
+	bp := &lpad.Blueprint{lpad.NewValue(nil, "", testServer.URL+"/project/+spec/the-bp", nil)}
+	branch := &lpad.Branch{lpad.NewValue(nil, testServer.URL, testServer.URL+"~joe/ensemble/some-branch", nil)}
 
 	err := bp.LinkBranch(branch)
 	c.Assert(err, IsNil)
@@ -51,4 +74,19 @@ func (s *ModelS) TestBlueprintLinkBranch(c *C) {
 	c.Assert(req.URL.Path, Equals, "/project/+spec/the-bp")
 	c.Assert(req.Form["ws.op"], Equals, []string{"linkBranch"})
 	c.Assert(req.Form["branch"], Equals, []string{branch.AbsLoc()})
+}
+
+func (s *ModelS) TestBlueprintLinkBug(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{}`)
+	bp := &lpad.Blueprint{lpad.NewValue(nil, "", testServer.URL+"/project/+spec/the-bp", nil)}
+	bug := &lpad.Bug{lpad.NewValue(nil, testServer.URL, testServer.URL+"~joe/ensemble/some-bug", nil)}
+
+	err := bp.LinkBug(bug)
+	c.Assert(err, IsNil)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "POST")
+	c.Assert(req.URL.Path, Equals, "/project/+spec/the-bp")
+	c.Assert(req.Form["ws.op"], Equals, []string{"linkBug"})
+	c.Assert(req.Form["bug"], Equals, []string{bug.AbsLoc()})
 }

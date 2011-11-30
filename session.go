@@ -13,16 +13,13 @@
 //
 package lpad
 
-import (
-	"http"
-	"os"
-)
+import "net/http"
 
 // The Auth interface is implemented by types which are able to Login and
 // authenticate requests made against Launchpad.
 type Auth interface {
-	Login(baseURL string) (err os.Error)
-	Sign(req *http.Request) (err os.Error)
+	Login(baseURL string) (err error)
+	Sign(req *http.Request) (err error)
 }
 
 type APIBase string
@@ -48,7 +45,7 @@ func NewSession(auth Auth) *Session {
 	return &Session{auth}
 }
 
-func (s *Session) Sign(req *http.Request) (err os.Error) {
+func (s *Session) Sign(req *http.Request) (err error) {
 	return s.auth.Sign(req)
 }
 
@@ -69,11 +66,10 @@ func (s *Session) Sign(req *http.Request) (err os.Error) {
 //     }
 //     fmt.Println(me.DisplayName())
 //
-func Login(baseurl APIBase, auth Auth) (root Root, err os.Error) {
+func Login(baseurl APIBase, auth Auth) (*Root, error) {
 	baseloc := string(baseurl)
-	err = auth.Login(baseloc)
-	if err != nil {
-		return
+	if err := auth.Login(baseloc); err != nil {
+		return nil, err
 	}
-	return Root{&Value{session: NewSession(auth), baseloc: baseloc, loc: baseloc}}, nil
+	return &Root{&Value{session: NewSession(auth), baseloc: baseloc, loc: baseloc}}, nil
 }

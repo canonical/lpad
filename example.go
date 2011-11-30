@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	"launchpad.net/lpad"
-	"os"
 )
 
-func check(err os.Error) {
+func check(err error) {
 	if err != nil {
 		panic(err)
 	}
@@ -19,25 +18,29 @@ func main() {
 	check(err)
 	fmt.Println(me.DisplayName())
 
-	v, err := root.Location("/bugs/123456").Get(nil)
-	fmt.Printf("%#v\n", v.Map())
+	//v, err := root.GetLocation("/bugs/123456")
+	//fmt.Printf("%#v\n", v.Map())
+
+	b, err := root.Branch("bzr+ssh://bazaar.launchpad.net/%2Bbranch/lbox/")
+	check(err)
+	println(b.UniqueName())
 
 	//check(err)
-//
-//	list, err := root.FindTeams("ensemble")
-//	check(err)
-//
-//	fmt.Printf("Found %d members.\n", list.TotalSize())
-//
-//	i := 0
-//	err = list.For(func(t lpad.Team) os.Error {
-//		fmt.Printf("%s\n", t.DisplayName())
-//		i++
-//		return nil
-//	})
-//	check(err)
-//
-//	fmt.Printf("Had %d results, iterated over %d.\n", list.TotalSize(), i)
+	//
+	//	list, err := root.FindTeams("ensemble")
+	//	check(err)
+	//
+	//	fmt.Printf("Found %d members.\n", list.TotalSize())
+	//
+	//	i := 0
+	//	err = list.For(func(t lpad.Team) os.Error {
+	//		fmt.Printf("%s\n", t.DisplayName())
+	//		i++
+	//		return nil
+	//	})
+	//	check(err)
+	//
+	//	fmt.Printf("Had %d results, iterated over %d.\n", list.TotalSize(), i)
 
 	//me, err := root.Me()
 	//check(err)

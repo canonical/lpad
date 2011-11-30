@@ -1,15 +1,28 @@
 package lpad
 
-import (
-	"os"
-)
+import "errors"
+import "strings"
+
+var weirdPrefixes = []string{
+	"bzr+ssh://bazaar.launchpad.net/%2Bbranch/",
+	"bzr+ssh://bazaar.launchpad.net/~branch/",
+}
 
 // Branch returns a branch for the provided URL. The URL can be in
 // the short form lp: notation, or the web address rooted at
 // http://bazaar.launchpad.net/
-func (root Root) Branch(url string) (branch Branch, err os.Error) {
+func (root *Root) Branch(url string) (*Branch, error) {
+	for _, prefix := range weirdPrefixes {
+		if strings.HasPrefix(url, prefix) {
+			url = "lp:" + url[len(prefix):]
+			break
+		}
+	}
 	v, err := root.Location("/branches").Get(Params{"ws.op": "getByUrl", "url": url})
-	return Branch{v}, err
+	if err != nil {
+		return nil, err
+	}
+	return &Branch{v}, nil
 }
 
 // The Branch type represents a project in Launchpad.
@@ -22,34 +35,90 @@ type Branch struct {
 // returned. If it's the development focus for a series, then a
 // lp:project/series is returned. Otherwise, the unique name for the
 // branch in the form lp:~user/project/branch-name is returned.
-func (b Branch) Id() string {
+func (b *Branch) Id() string {
 	return b.StringField("bzr_identity")
 }
 
 // UniqueName returns the unique branch name, in the
 // form lp:~user/project/branch-name.
-func (b Branch) UniqueName() string {
+func (b *Branch) UniqueName() string {
 	return b.StringField("unique_name")
 }
 
+// OwnerName returns the name from the owner of this branch.
+func (b *Branch) OwnerName() string {
+	un := b.UniqueName()
+	if len(un) > 0 && un[0] == '~' {
+		for i := 0; i < len(un); i++ {
+			if un[i] == '/' {
+				return un[1:i]
+			}
+		}
+	}
+	panic("can't find owner name in unique_name: " + un)
+}
+
+// ProjectName returns the name for the project this branch is part of.
+func (b *Branch) ProjectName() string {
+	un := b.UniqueName()
+	if len(un) > 0 && un[0] == '~' {
+		var i, j int
+		for i = 0; i < len(un); i++ {
+			if un[i] == '/' {
+				break
+			}
+		}
+		i++
+		if i < len(un) {
+			for j = i; j < len(un); j++ {
+				if un[j] == '/' {
+					break
+				}
+			}
+			return un[i:j]
+		}
+	}
+	panic("can't find project name in unique_name: " + un)
+}
+
 // WebPage returns the URL for accessing this branch in a browser.
-func (b Branch) WebPage() string {
+func (b *Branch) WebPage() string {
 	return b.StringField("web_link")
+}
+
+// LandingCandidates returns a list of all the merge proposals that
+// have this branch as the target of the proposed change.
+func (b *Branch) LandingCandidates() (*MergeProposalList, error) {
+	v, err := b.Link("landing_candidates_collection_link").Get(nil)
+	if err != nil {
+		return nil, err
+	}
+	return &MergeProposalList{v}, nil
+}
+
+// LandingTargets returns a list of all the merge proposals that
+// have this branch as the source of the proposed change.
+func (b *Branch) LandingTargets() (*MergeProposalList, error) {
+	v, err := b.Link("landing_targets_collection_link").Get(nil)
+	if err != nil {
+		return nil, err
+	}
+	return &MergeProposalList{v}, nil
 }
 
 type MergeStub struct {
 	Description   string
 	CommitMessage string
 	NeedsReview   bool
-	Target        Branch
-	PreReq        Branch
+	Target        *Branch
+	PreReq        *Branch
 }
 
 // ProposeMerge proposes this branch for merging on another branch by
 // creating the respective merge proposal.
-func (b Branch) ProposeMerge(stub *MergeStub) (mp MergeProposal, err os.Error) {
-	if !stub.Target.IsValid() {
-		err = os.NewError("Missing target branch")
+func (b *Branch) ProposeMerge(stub *MergeStub) (mp *MergeProposal, err error) {
+	if stub.Target == nil {
+		return nil, errors.New("Missing target branch")
 	}
 	params := Params{
 		"ws.op":         "createMergeProposal",
@@ -63,62 +132,123 @@ func (b Branch) ProposeMerge(stub *MergeStub) (mp MergeProposal, err os.Error) {
 	}
 	if stub.NeedsReview {
 		params["needs_review"] = "true"
+	} else {
+		params["needs_review"] = "false"
 	}
-	if stub.PreReq.IsValid() {
+	if stub.PreReq != nil {
 		params["prerequisite_branch"] = stub.PreReq.AbsLoc()
 	}
 	v, err := b.Post(params)
-	return MergeProposal{v}, err
+	if err != nil {
+		return nil, err
+	}
+	return &MergeProposal{v}, nil
 }
 
 type MergeProposal struct {
 	*Value
 }
 
-// Description returns the merge proposal introductory comment.
-func (mp MergeProposal) Description() string {
+// Description returns the detailed description of the changes being
+// proposed in the source branch of the merge proposal.
+func (mp *MergeProposal) Description() string {
 	return mp.StringField("description")
 }
 
+// SetDescription changes the detailed description of the changes being
+// proposed in the source branch of the merge proposal.
+func (mp *MergeProposal) SetDescription(description string) {
+	mp.SetField("description", description)
+}
+
+type MergeProposalStatus string
+
+const (
+	StWorkInProgress MergeProposalStatus = "Work in progress"
+	StNeedsReview    MergeProposalStatus = "Needs review"
+	StApproved       MergeProposalStatus = "Approved"
+	StRejected       MergeProposalStatus = "Rejected"
+	StMerged         MergeProposalStatus = "Merged"
+	StFailedToMerge  MergeProposalStatus = "Code failed to merge"
+	StQueued         MergeProposalStatus = "Queued"
+	StSuperseded     MergeProposalStatus = "Superseded"
+)
+
 // Status returns the current status of the merge proposal.
 // E.g. Needs review, Work In Progress, etc.
-func (mp MergeProposal) Status() string {
-	return mp.StringField("queue_status")
+func (mp *MergeProposal) Status() MergeProposalStatus {
+	return MergeProposalStatus(mp.StringField("queue_status"))
+}
+
+// SetStatus changes the current status of the merge proposal.
+// Patch must be called to commit all changes.
+func (mp *MergeProposal) SetStatus(status MergeProposalStatus) {
+	mp.SetField("queue_status", string(status))
 }
 
 // CommitMessage returns the commit message to be used when merging
-// the proposal.
-func (mp MergeProposal) CommitMessage() string {
+// the source branch onto the target branch.
+func (mp *MergeProposal) CommitMessage() string {
 	return mp.StringField("commit_message")
+}
+
+// SetCommitMessage changes the commit message to be used when
+// merging the source branch onto the target branch.
+func (mp *MergeProposal) SetCommitMessage(msg string) {
+	mp.SetField("commit_message", msg)
 }
 
 // Email returns the unique email that may be used to add new comments
 // to the merge proposal conversation.
-func (mp MergeProposal) Email() string {
+func (mp *MergeProposal) Email() string {
 	return mp.StringField("address")
 }
 
 // Source returns the source branch that has additional code to land.
-func (mp MergeProposal) Source() (branch Branch, err os.Error) {
+func (mp *MergeProposal) Source() (*Branch, error) {
 	v, err := mp.Link("source_branch_link").Get(nil)
-	return Branch{v}, err
+	if err != nil {
+		return nil, err
+	}
+	return &Branch{v}, nil
 }
 
 // Target returns the branch where code will land on once merged.
-func (mp MergeProposal) Target() (branch Branch, err os.Error) {
+func (mp *MergeProposal) Target() (*Branch, error) {
 	v, err := mp.Link("target_branch_link").Get(nil)
-	return Branch{v}, err
+	if err != nil {
+		return nil, err
+	}
+	return &Branch{v}, nil
 }
 
 // PreReq returns the branch is the base (merged or not) for the code
 // within the target branch.
-func (mp MergeProposal) PreReq() (branch Branch, err os.Error) {
+func (mp *MergeProposal) PreReq() (*Branch, error) {
 	v, err := mp.Link("prerequisite_branch_link").Get(nil)
-	return Branch{v}, err
+	if err != nil {
+		return nil, err
+	}
+	return &Branch{v}, nil
 }
 
 // WebPage returns the URL for accessing this merge proposal
 // in a browser.
-func (mp MergeProposal) WebPage() string {
+func (mp *MergeProposal) WebPage() string {
 	return mp.StringField("web_link")
+}
+
+// The MergeProposalList type encapsulates a list of MergeProposal
+// elements for iteration.
+type MergeProposalList struct {
+	*Value
+}
+
+// For iterates over the list of merge proposals and calls f for each one.
+// If f returns a non-nil error, iteration will stop and the error will be
+// returned as the result of For.
+func (list *MergeProposalList) For(f func(t *MergeProposal) error) error {
+	return list.Value.For(func(v *Value) error {
+		return f(&MergeProposal{v})
+	})
 }

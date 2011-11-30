@@ -2,15 +2,17 @@ package lpad
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"http"
 	"io/ioutil"
-	"json"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path"
 	"strconv"
 	"strings"
-	"url"
 )
 
 // The Params type is a helper to pass parameter into the Value request
@@ -25,7 +27,7 @@ type Error struct {
 	Body       []byte // Body of response
 }
 
-func (e *Error) String() string {
+func (e *Error) Error() string {
 	if len(e.Body) == 0 {
 		return "Server returned " + strconv.Itoa(e.StatusCode) + " and no body."
 	}
@@ -48,12 +50,12 @@ type AnyValue interface {
 	SetField(key string, value interface{})
 	Location(loc string) *Value
 	Link(key string) *Value
-	Get(params Params) (*Value, os.Error)
-	Post(params Params) (*Value, os.Error)
-	Patch() os.Error
+	Get(params Params) (*Value, error)
+	Post(params Params) (*Value, error)
+	Patch() error
 	TotalSize() int
 	StartIndex() int
-	For(func(v *Value) os.Error) os.Error
+	For(func(v *Value) error) error
 }
 
 // The Value type is the underlying dynamic layer used as the foundation of
@@ -211,7 +213,7 @@ func (v *Value) Link(key string) *Value {
 
 // Error returned when a Get, Post or Patch operation is done on
 // a nil value.
-var InvalidValue = os.NewError("Invalid value")
+var InvalidValue = errors.New("Invalid value")
 
 // Get issues an HTTP GET to retrieve the content of this value,
 // and returns itself and an error in case of problems. If params
@@ -221,20 +223,20 @@ var InvalidValue = os.NewError("Invalid value")
 //
 //     v, err := other.Link("some_link").Get(nil)
 //
-func (v *Value) Get(params Params) (same *Value, err os.Error) {
+func (v *Value) Get(params Params) (same *Value, err error) {
 	return v.do("GET", params, nil)
 }
 
 // Post issues an HTTP POST to perform a given action at the URL
 // specified by this value.  If params is not nil, it will
 // provided as the parameters for the POST request.
-func (v *Value) Post(params Params) (other *Value, err os.Error) {
+func (v *Value) Post(params Params) (other *Value, err error) {
 	return v.do("POST", params, nil)
 }
 
 // Patch issues an HTTP PATCH request to modify the server value
 // with the local changes.
-func (v *Value) Patch() os.Error {
+func (v *Value) Patch() error {
 	if v == nil {
 		return InvalidValue
 	}
@@ -260,11 +262,11 @@ func (v *Value) StartIndex() int {
 // provided function for each entry.  If the function returns a
 // non-nil err value, the iteration will stop.  Watch out for
 // very large collections!
-func (v *Value) For(f func(*Value) os.Error) (err os.Error) {
+func (v *Value) For(f func(*Value) error) (err error) {
 	for {
 		entries, ok := v.Map()["entries"].([]interface{})
 		if !ok {
-			return os.NewError("No entries found in value")
+			return errors.New("No entries found in value")
 		}
 		for _, entry := range entries {
 			m, ok := entry.(map[string]interface{})
@@ -289,13 +291,13 @@ func (v *Value) For(f func(*Value) os.Error) (err os.Error) {
 	return nil
 }
 
-var stopRedir = os.NewError("Stop redirection marker.")
+var stopRedir = errors.New("marker")
 
 var httpClient = http.Client{
-	CheckRedirect: func(req *http.Request, via []*http.Request) os.Error { return stopRedir },
+	CheckRedirect: func(req *http.Request, via []*http.Request) error { return stopRedir },
 }
 
-func (v *Value) do(method string, params Params, body []byte) (value *Value, err os.Error) {
+func (v *Value) do(method string, params Params, body []byte) (value *Value, err error) {
 	if v == nil {
 		return nil, InvalidValue
 	}
@@ -314,6 +316,8 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 			query = ""
 			ctype = "application/x-www-form-urlencoded"
 		} else {
+			req.URL.Raw = ""
+			req.URL.RawPath = ""
 			if req.URL.RawQuery != "" {
 				req.URL.RawQuery += "&"
 			}
@@ -335,18 +339,18 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 		}
 
 		if debugOn {
-			printDump(http.DumpRequest(req, false))
+			printDump(httputil.DumpRequest(req, false))
 		}
 
 		resp, err := httpClient.Do(req)
-		if urlerr, ok := err.(*url.Error); ok && urlerr.Error == stopRedir {
+		if urlerr, ok := err.(*url.Error); ok && urlerr.Err == stopRedir {
 			// fine
 		} else if err != nil {
 			return nil, err
 		}
 
 		if debugOn {
-			printDump(http.DumpResponse(resp, false))
+			printDump(httputil.DumpResponse(resp, false))
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
@@ -367,7 +371,7 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 		if method == "GET" && shouldRedirect(resp.StatusCode) {
 			if location == "" {
 				msg := "Got redirection status " + strconv.Itoa(resp.StatusCode) + " without a Location"
-				return nil, os.NewError(msg)
+				return nil, errors.New(msg)
 			}
 			value.loc = location
 			continue
@@ -383,7 +387,7 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 
 		ctype = resp.Header.Get("Content-Type")
 		if ctype != "application/json" {
-			return nil, os.NewError("Non-JSON content-type: " + ctype)
+			return nil, errors.New("Non-JSON content-type: " + ctype)
 		}
 
 		if err != nil {
@@ -424,10 +428,10 @@ func SetDebug(debug bool) {
 	debugOn = debug
 }
 
-func printDump(data []byte, err os.Error) {
+func printDump(data []byte, err error) {
 	s := string(data)
 	if err != nil {
-		s = err.String()
+		s = err.Error()
 	}
 	fmt.Fprintf(os.Stderr, "===== DEBUG =====\n%s\n=================\n", s)
 }
