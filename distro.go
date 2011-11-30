@@ -24,14 +24,14 @@ type DistroList struct {
 }
 
 //Distros returns the list of all distributions registered in Launchpad
-func (root Root) Distros() (distrolist DistroList, err os.Error) {
+func (root Root) Distros() (distrolist DistroList, err error) {
 	list, err := root.Location("/distros/").Get(nil)
 	return DistroList{list}, err
 }
 
 //For calls a function on each distro in the list
-func (list DistroList) For(fn func(d Distro) os.Error) {
-	list.Value.For(func(v *Value) os.Error {
+func (list DistroList) For(fn func(d Distro) error) {
+	list.Value.For(func(v *Value) error {
 		fn(Distro{v})
 		return nil
 	})
@@ -170,7 +170,7 @@ func (d *Distro) ActiveMilestones() (*MilestoneList, error) {
 }
 
 // Series returns the named series of this distribution.
-func (d Distro) Series(name string) (series DistroSeries, err os.Error) {
+func (d Distro) Series(name string) (series DistroSeries, err error) {
 	s, err := d.Location(url.QueryEscape(name)).Get(nil)
 	return DistroSeries{s}, err
 }
@@ -185,13 +185,13 @@ func (d *Distro) AllSeries() (*DistroSeriesList, error) {
 }
 
 // Archives returns the archives associated with the distribution.
-func (d Distro) Archives() (archives ArchiveList, err os.Error) {
+func (d Distro) Archives() (archives ArchiveList, err error) {
 	r, err := d.Link("archives_collection_link").Get(nil)
 	return ArchiveList{r}, err
 }
 
 //Archive returns the named archive associated with the distribution
-func (d Distro) Archive(name string) (archive Archive, err os.Error) {
+func (d Distro) Archive(name string) (archive Archive, err error) {
 	v, err := d.Location("").Get(Params{"ws.op": "getArchive", "name": name})
 	return Archive{v}, err
 }
@@ -263,7 +263,7 @@ func (d DistroSeries) Description() string {
 
 //GetBuildRecords gets a list of all the Build objects for this distribution series
 //for packages in the given pocket and with names matching source_name
-func (d DistroSeries) GetBuildRecords(build_state BuildState, pocket Pocket, source_name string) (list BuildList, err os.Error) {
+func (d DistroSeries) GetBuildRecords(build_state BuildState, pocket Pocket, source_name string) (list BuildList, err error) {
 	params := Params{"ws.op": "getBuildRecords",
 		"build_state": string(build_state)}
 	if pocket != PocketAny {

@@ -1,9 +1,5 @@
 package lpad
 
-import (
-	"os"
-)
-
 //https://launchpad.net/builders
 //Not all info presented on that page is available via the LP API though.
 
@@ -13,7 +9,7 @@ type Builder struct {
 }
 
 //Builder returns a builder by its name
-func (root Root) Builder(buildername string) (builder Builder, err os.Error) {
+func (root Root) Builder(buildername string) (builder Builder, err error) {
 	v, err := root.Location("/builders").Get(Params{"ws.op": "getByName", "name": buildername})
 	return Builder{v}, err
 }
@@ -59,14 +55,14 @@ type BuilderList struct {
 }
 
 //Builders gets all the builders
-func (root Root) Builders() (list BuilderList, err os.Error) {
+func (root Root) Builders() (list BuilderList, err error) {
 	v, err := root.Location("/builders").Get(nil)
 	return BuilderList{v}, err
 }
 
 //For calls a given function on each builder
-func (list BuilderList) For(f func(b Builder) os.Error) os.Error {
-	return list.Value.For(func(v *Value) os.Error {
+func (list BuilderList) For(f func(b Builder) error) error {
+	return list.Value.For(func(v *Value) error {
 		f(Builder{v})
 		return nil
 	})

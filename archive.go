@@ -1,9 +1,5 @@
 package lpad
 
-import (
-	"os"
-)
-
 type Archive struct {
 	*Value
 }
@@ -39,14 +35,14 @@ func (a Archive) WebPage() string {
 	return a.StringField("web_link")
 }
 
-func (a Archive) GetPublishedSources(source string) (spph SPPHList, err os.Error) {
-    p := Params{"ws.op" : "getPublishedSources",
-                "source_name":source,
-                "exact_match":"true",
-                "pocket":"Release",
-                "status":"Published"}
-    v, err := a.Location(a.SelfLink()).Get(p)
-    return SPPHList{v}, err
+func (a Archive) GetPublishedSources(source string) (spph SPPHList, err error) {
+	p := Params{"ws.op": "getPublishedSources",
+		"source_name": source,
+		"exact_match": "true",
+		"pocket":      "Release",
+		"status":      "Published"}
+	v, err := a.Location(a.SelfLink()).Get(p)
+	return SPPHList{v}, err
 }
 
 type ArchiveList struct {
@@ -54,8 +50,8 @@ type ArchiveList struct {
 }
 
 //For iterates over a list of archives and calls a function on each
-func (list ArchiveList) For(fn func(a Archive) os.Error) os.Error {
-	return list.Value.For(func(v *Value) os.Error {
+func (list ArchiveList) For(fn func(a Archive) error) error {
+	return list.Value.For(func(v *Value) error {
 		fn(Archive{v})
 		return nil
 	})

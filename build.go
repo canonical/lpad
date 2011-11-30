@@ -1,9 +1,6 @@
 package lpad
 
-import (
-	"os"
-	"strconv"
-)
+import "strconv"
 
 //The various states a package build can be found in
 type BuildState string
@@ -43,15 +40,15 @@ type BuildList struct {
 }
 
 //Calls the function fn on each Build in the BuildList
-func (bl BuildList) For(fn func(b Build) os.Error) os.Error {
-	return bl.Value.For(func(v *Value) os.Error {
+func (bl BuildList) For(fn func(b Build) error) error {
+	return bl.Value.For(func(v *Value) error {
 		fn(Build{v})
 		return nil
 	})
 }
 
 //Build returns the package build identified by distro, package name and id
-func (root Root) Build(distro string, source string, id int) (build Build, err os.Error) {
+func (root Root) Build(distro string, source string, id int) (build Build, err error) {
 	v, err := root.Location("/" + distro + "/+source/" + source + "/" + strconv.Itoa(id)).Get(nil)
 	return Build{v}, err
 }
@@ -67,7 +64,7 @@ func (build Build) ArchTag() string {
 }
 
 //Retry gives back a failed build to the builder farm
-func (build Build) Retry() os.Error {
+func (build Build) Retry() error {
 	_, err := build.Post(Params{"ws_op": "retry"})
 	return err
 }
@@ -114,14 +111,14 @@ func (s SPPH) PackageVersion() string {
 
 //Get the distro series this is published in
 func (s SPPH) DistroSeries() (a DistroSeries) {
-    v, _ := s.Link("distro_series_link").Get(nil)
-    return DistroSeries{v}
+	v, _ := s.Link("distro_series_link").Get(nil)
+	return DistroSeries{v}
 }
 
 //Get the archive this is published in
 func (s SPPH) Archive() (a Archive) {
-    v, _ := s.Link("archive_link").Get(nil)
-    return Archive{v}
+	v, _ := s.Link("archive_link").Get(nil)
+	return Archive{v}
 }
 
 //Get the component this package was published in (i.e. main,universe)
@@ -130,18 +127,18 @@ func (s SPPH) Component() string {
 }
 
 //Gets the SPPH corresponding to a Build
-func (build Build) CurrentSourcePublicationLink() (spph SPPH, err os.Error) {
+func (build Build) CurrentSourcePublicationLink() (spph SPPH, err error) {
 	v, err := build.Link("current_source_publication_link").Get(nil)
 	return SPPH{v}, err
 }
 
 type SPPHList struct {
-    *Value
+	*Value
 }
 
-func (list SPPHList) For(f func (s SPPH) os.Error) os.Error {
-    return list.Value.For(func (v *Value) os.Error {
-        f(SPPH{v})
-        return nil
-    })
+func (list SPPHList) For(f func(s SPPH) error) error {
+	return list.Value.For(func(v *Value) error {
+		f(SPPH{v})
+		return nil
+	})
 }
