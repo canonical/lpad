@@ -13,7 +13,7 @@ func (s *ModelS) TestArchive(c *C) {
 		"self_link":   "http://apipage",
 		"web_link":    "http://page",
 	}
-	archive := lpad.Archive{lpad.NewValue(nil, "", "", m)}
+	archive := &lpad.Archive{lpad.NewValue(nil, "", "", m)}
 	c.Assert(archive.Name(), Equals, "thename")
 	c.Assert(archive.DisplayName(), Equals, "The Name")
 	c.Assert(archive.Description(), Equals, "The Description")
