@@ -2,7 +2,7 @@ package lpad
 
 import "strconv"
 
-//The various states a package build can be found in
+// A BuildState holds the state a package build can be found in
 type BuildState string
 
 const (
@@ -17,7 +17,7 @@ const (
 	BSCurrentlyUploading       BuildState = "Currently uploading"
 )
 
-//The various distribution pockets where packages end up
+// A Pocket represents the various distribution pockets where packages end up
 type Pocket string
 
 const (
@@ -29,116 +29,122 @@ const (
 	PocketBackports Pocket = "Backports"
 )
 
-//A Build describes a package build
+// The Build type describes a package build
 type Build struct {
 	*Value
 }
 
-//A BuildList is a list of Build objects
+// The BuildList type represents a list of Build objects
 type BuildList struct {
 	*Value
 }
 
-//Calls the function fn on each Build in the BuildList
-func (bl BuildList) For(fn func(b Build) error) error {
+// For calls the function f on each Build in the BuildList
+func (bl *BuildList) For(f func(b *Build) error) error {
 	return bl.Value.For(func(v *Value) error {
-		fn(Build{v})
-		return nil
+		return f(&Build{v})
 	})
 }
 
-//Build returns the package build identified by distro, package name and id
-func (root Root) Build(distro string, source string, id int) (build Build, err error) {
+// Build returns the package build identified by distro, package name and id
+func (root *Root) Build(distro string, source string, id int) (*Build, error) {
 	v, err := root.Location("/" + distro + "/+source/" + source + "/" + strconv.Itoa(id)).Get(nil)
-	return Build{v}, err
+	if err != nil {
+	    return nil, err
+	}
+	return &Build{v}, nil
 }
 
-//Title is the title of this build
-func (build Build) Title() string {
+// Title is the title of this build
+func (build *Build) Title() string {
 	return build.StringField("title")
 }
 
-//ArchTag is the architecture of this build
-func (build Build) ArchTag() string {
+// ArchTag is the architecture of this build
+func (build *Build) ArchTag() string {
 	return build.StringField("arch_tag")
 }
 
-//Retry gives back a failed build to the builder farm
-func (build Build) Retry() error {
+// Retry gives back a failed build to the builder farm
+func (build *Build) Retry() error {
 	_, err := build.Post(Params{"ws_op": "retry"})
 	return err
 }
 
-//WebPage is the webpage of this build in Launchpad
-func (build Build) WebPage() string {
+// WebPage is the webpage of this build in Launchpad
+func (build *Build) WebPage() string {
 	return build.StringField("web_link")
 }
 
-//BuildLogURL is the URL of the gzipped build log file of this build
-func (build Build) BuildLogURL() string {
+// BuildLogURL is the URL of the gzipped build log file of this build
+func (build *Build) BuildLogURL() string {
 	return build.StringField("build_log_url")
 }
 
-//DateCreated is the date when this build was created
-func (build Build) DateCreated() string {
+// DateCreated is the date when this build was created
+func (build *Build) DateCreated() string {
 	return build.StringField("datecreated")
 }
 
-//DateBuilt is the date when the build finished
-func (build Build) DateBuilt() string {
+// DateBuilt is the date when the build finished
+func (build *Build) DateBuilt() string {
 	return build.StringField("datebuilt")
 }
 
-// URL of this build entry
-func (b Build) SelfLink() string {
-	return b.StringField("self_link")
+// SelfLink returns the API URL of this build entry
+func (build *Build) SelfLink() string {
+	return build.StringField("self_link")
 }
 
-//Source package publication history
+// The SPPH type holds the source package publication history
 type SPPH struct {
 	*Value
 }
 
-//Gets the source package name of a SPPH
-func (s SPPH) PackageName() string {
+// PackageName gets the source package name of a SPPH
+func (s *SPPH) PackageName() string {
 	return s.StringField("source_package_name")
 }
 
-//Gets the  package version of a SPPH
-func (s SPPH) PackageVersion() string {
+// PackageVersion gets the  package version of a SPPH
+func (s *SPPH) PackageVersion() string {
 	return s.StringField("source_package_version")
 }
 
-//Get the distro series this is published in
-func (s SPPH) DistroSeries() (a DistroSeries) {
+// DistroSeries gets the distro series this is published in
+func (s *SPPH) DistroSeries() (*DistroSeries) {
 	v, _ := s.Link("distro_series_link").Get(nil)
-	return DistroSeries{v}
+	return &DistroSeries{v}
 }
 
-//Get the archive this is published in
-func (s SPPH) Archive() (a Archive) {
+// Archive gets the archive this is published in
+func (s *SPPH) Archive() (*Archive) {
 	v, _ := s.Link("archive_link").Get(nil)
-	return Archive{v}
+	return &Archive{v}
 }
 
-//Get the component this package was published in (i.e. main,universe)
-func (s SPPH) Component() string {
+// Component gets the component this package was published in (i.e. main,universe)
+func (s *SPPH) Component() string {
 	return s.StringField("component_name")
 }
 
-//Gets the SPPH corresponding to a Build
-func (build Build) CurrentSourcePublicationLink() (spph SPPH, err error) {
+// CurrentSourcePublicationLink gets the SPPH corresponding to a Build
+func (build *Build) CurrentSourcePublicationLink() (*SPPH, error) {
 	v, err := build.Link("current_source_publication_link").Get(nil)
-	return SPPH{v}, err
+	if err != nil {
+	    return nil, err
+	}
+	return &SPPH{v}, nil
 }
 
+// SPPHList is a list of SPPH objects used for iteration
 type SPPHList struct {
 	*Value
 }
 
-func (list SPPHList) For(f func(s SPPH) error) error {
+// For iterates over the list of SPPHs and calls f for each one.
+func (list *SPPHList) For(f func(s *SPPH) error) error {
 	return list.Value.For(func(v *Value) error {
-		f(SPPH{v})
-		return nil
+		return f(&SPPH{v})
 	})
 }

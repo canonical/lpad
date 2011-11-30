@@ -1,58 +1,64 @@
 package lpad
 
+// Archive represents a package archive
 type Archive struct {
 	*Value
 }
 
-// Name of this archive
-func (a Archive) Name() string {
+// Name returns the name of this archive
+func (a *Archive) Name() string {
 	return a.StringField("name")
 }
 
-// User friendly name of this archive
-func (a Archive) DisplayName() string {
+// DisplayName returns an user friendly name of this archive
+func (a *Archive) DisplayName() string {
 	return a.StringField("displayname")
 }
 
-// Name of this archive
-func (a Archive) Description() string {
+// Description returns a description string for this archive
+func (a *Archive) Description() string {
 	return a.StringField("description")
 }
 
-// The distribution that uses this archive
-func (a Archive) Distribution() Distro {
+// Distribution returns the distribution that uses this archive
+func (a *Archive) Distribution() *Distro {
 	v, _ := a.Link("distribution_link").Get(nil)
-	return Distro{v}
+	return &Distro{v}
 }
 
-// URL of this archive
-func (a Archive) SelfLink() string {
+// SelfLink returns the API URL of this Archive object
+func (a *Archive) SelfLink() string {
 	return a.StringField("self_link")
 }
 
 // WebPage returns the URL for accessing this archive in a browser.
-func (a Archive) WebPage() string {
+func (a *Archive) WebPage() string {
 	return a.StringField("web_link")
 }
 
-func (a Archive) GetPublishedSources(source string) (spph SPPHList, err error) {
+// GetPublishedSources returns a list of SPPH records of this archive
+// that match the given criteria
+func (a *Archive) GetPublishedSources(source string) (*SPPHList, error) {
 	p := Params{"ws.op": "getPublishedSources",
 		"source_name": source,
 		"exact_match": "true",
 		"pocket":      "Release",
 		"status":      "Published"}
 	v, err := a.Location(a.SelfLink()).Get(p)
-	return SPPHList{v}, err
+	if err != nil {
+	    return nil, err
+	}
+	return &SPPHList{v}, nil
 }
 
+// ArchiveList is a list of Archive objects used for iterating
 type ArchiveList struct {
 	*Value
 }
 
 //For iterates over a list of archives and calls a function on each
-func (list ArchiveList) For(fn func(a Archive) error) error {
+func (list *ArchiveList) For(f func(a *Archive) error) error {
 	return list.Value.For(func(v *Value) error {
-		fn(Archive{v})
-		return nil
+		return f(&Archive{v})
 	})
 }
