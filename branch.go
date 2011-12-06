@@ -238,6 +238,37 @@ func (mp *MergeProposal) WebPage() string {
 	return mp.StringField("web_link")
 }
 
+type ProposalVote string
+
+const (
+	VoteNone        ProposalVote = ""
+	VoteApprove     ProposalVote = "Approve"
+	VoteNeedsFixing ProposalVote = "Needs Fixing"
+	VoteNeedsInfo   ProposalVote = "Needs Information"
+	VoteAbstain     ProposalVote = "Abstain"
+	VoteDisapprove  ProposalVote = "Disapprove"
+	VoteResubmit    ProposalVote = "Resubmit"
+)
+
+// AddComment adds a new comment to mp.
+func (mp *MergeProposal) AddComment(subject, message string, vote ProposalVote, reviewType string) error {
+	params := Params{
+		"ws.op":   "createComment",
+		"subject": subject,
+	}
+	if message != "" {
+		params["content"] = message
+	}
+	if vote != VoteNone {
+		params["vote"] = string(vote)
+	}
+	if reviewType != "" {
+		params["review_type"] = reviewType
+	}
+	_, err := mp.Post(params)
+	return err
+}
+
 // The MergeProposalList type encapsulates a list of MergeProposal
 // elements for iteration.
 type MergeProposalList struct {

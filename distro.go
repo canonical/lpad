@@ -64,13 +64,12 @@ type BranchTip struct {
 }
 
 // BranchTips returns a list of all branches registered under the given
-// distribution changed after the sinceNS timestamp, provided in nanoseconds.
-// If sinceNS is zero, all branch tips in the distribution are returned.
-func (d *Distro) BranchTips(sinceNS int64) (tips []BranchTip, err error) {
+// distribution changed after the since time.  If since is the zero time,
+// all branch tips in the distribution are returned.
+func (d *Distro) BranchTips(since time.Time) (tips []BranchTip, err error) {
 	params := Params{"ws.op": "getBranchTips"}
-	if sinceNS != 0 {
-		t := time.NanosecondsToUTC(sinceNS)
-		params["since"] = t.Format(time.RFC3339)
+	if !since.IsZero() {
+		params["since"] = since.In(time.UTC).Format(time.RFC3339)
 	}
 	v, err := d.Location("").Get(params)
 	if err != nil {
