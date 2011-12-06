@@ -101,6 +101,34 @@ func (s *ModelS) TestMergeProposal(c *C) {
 	c.Assert(req.URL.Path, Equals, "/source_link")
 }
 
+func (s *ModelS) TestMergeProposalAddComment(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{}`)
+	testServer.PrepareResponse(200, jsonType, `{}`)
+
+	mp := &lpad.MergeProposal{lpad.NewValue(nil, testServer.URL, testServer.URL+"/mp", nil)}
+
+	err := mp.AddComment("Subject", "", lpad.VoteNone, "")
+	c.Assert(err, IsNil)
+
+	err = mp.AddComment("Subject", "Message.", lpad.VoteNeedsFixing, "QA")
+	c.Assert(err, IsNil)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "POST")
+	c.Assert(req.URL.Path, Equals, "/mp")
+	c.Assert(req.Form["ws.op"], Equals, []string{"createComment"})
+	c.Assert(req.Form["subject"], Equals, []string{"Subject"})
+
+	req = testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "POST")
+	c.Assert(req.URL.Path, Equals, "/mp")
+	c.Assert(req.Form["ws.op"], Equals, []string{"createComment"})
+	c.Assert(req.Form["subject"], Equals, []string{"Subject"})
+	c.Assert(req.Form["content"], Equals, []string{"Message."})
+	c.Assert(req.Form["vote"], Equals, []string{"Needs Fixing"})
+	c.Assert(req.Form["review_type"], Equals, []string{"QA"})
+}
+
 func (s *ModelS) TestBranchProposeMerge(c *C) {
 	data := `{"description": "Description"}`
 	testServer.PrepareResponse(200, jsonType, data)

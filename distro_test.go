@@ -3,6 +3,7 @@ package lpad_test
 import (
 	. "launchpad.net/gocheck"
 	"launchpad.net/lpad"
+	"time"
 )
 
 func (s *ModelS) TestDistro(c *C) {
@@ -161,7 +162,7 @@ func (s *ModelS) TestBranchTips(c *C) {
 	data := `[["lp:a", "rev1", ["series1", "series2"]], ["lp:b", "rev2", []]]`
 	testServer.PrepareResponse(200, jsonType, data)
 	distro := lpad.Distro{lpad.NewValue(nil, testServer.URL, testServer.URL+"/distro", nil)}
-	tips, err := distro.BranchTips(0)
+	tips, err := distro.BranchTips(time.Time{})
 	c.Assert(err, IsNil)
 	c.Assert(tips, Equals, []lpad.BranchTip{
 		{"lp:a", "rev1", []string{"series1", "series2"}},
@@ -178,7 +179,7 @@ func (s *ModelS) TestBranchTips(c *C) {
 func (s *ModelS) TestBranchTipsWithSince(c *C) {
 	testServer.PrepareResponse(200, jsonType, "[]")
 	distro := lpad.Distro{lpad.NewValue(nil, testServer.URL, testServer.URL+"/distro", nil)}
-	tips, err := distro.BranchTips(1316567786e9)
+	tips, err := distro.BranchTips(time.Unix(1316567786, 0))
 	c.Assert(err, IsNil)
 	c.Assert(tips, Equals, []lpad.BranchTip(nil))
 

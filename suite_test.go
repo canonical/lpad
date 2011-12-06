@@ -29,7 +29,7 @@ func (s *SuiteI) SetUpSuite(c *C) {
 
 type HTTPSuite struct{}
 
-var testServer = NewTestHTTPServer("http://localhost:4444", 5e9)
+var testServer = NewTestHTTPServer("http://localhost:4444", 5 * time.Second)
 
 func (s *HTTPSuite) SetUpSuite(c *C) {
 	testServer.Start()
@@ -41,7 +41,7 @@ func (s *HTTPSuite) TearDownTest(c *C) {
 
 type TestHTTPServer struct {
 	URL      string
-	Timeout  int64
+	Timeout  time.Duration
 	started  bool
 	request  chan *http.Request
 	response chan *testResponse
@@ -54,7 +54,7 @@ type testResponse struct {
 	Body    string
 }
 
-func NewTestHTTPServer(url_ string, timeout int64) *TestHTTPServer {
+func NewTestHTTPServer(url_ string, timeout time.Duration) *TestHTTPServer {
 	return &TestHTTPServer{URL: url_, Timeout: timeout}
 }
 
