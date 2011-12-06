@@ -76,9 +76,19 @@ func (build *Build) WebPage() string {
 	return build.StringField("web_link")
 }
 
+// State returns the state of this build (successful, depwait, failed, etc.)
+func (build *Build) State() string {
+	return build.StringField("buildstate")
+}
+
 // BuildLogURL is the URL of the gzipped build log file of this build
 func (build *Build) BuildLogURL() string {
 	return build.StringField("build_log_url")
+}
+
+// UploadLogURL is the URL of upload log if there was an upload failure, None otherwise
+func (build *Build) UploadLogURL() string {
+	return build.StringField("upload_log_url")
 }
 
 // DateCreated is the date when this build was created

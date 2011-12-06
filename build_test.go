@@ -9,14 +9,18 @@ func (s *ModelS) TestBuild(c *C) {
 	m := M{
 		"title":         "thetitle",
 		"arch_tag":      "armel",
+		"buildstate":      "Failed to build",
 		"build_log_url": "http://logurl",
+		"upload_log_url": "http://uploadurl",
 		"web_link":      "http://page",
 		"self_link":      "http://apipage",
 	}
 	build := &lpad.Build{lpad.NewValue(nil, "", "", m)}
 	c.Assert(build.Title(), Equals, "thetitle")
 	c.Assert(build.ArchTag(), Equals, "armel")
+	c.Assert(build.State(), Equals, "Failed to build")
 	c.Assert(build.BuildLogURL(), Equals, "http://logurl")
+	c.Assert(build.UploadLogURL(), Equals, "http://uploadurl")
 	c.Assert(build.WebPage(), Equals, "http://page")
 	c.Assert(build.SelfLink(), Equals, "http://apipage")
 }
