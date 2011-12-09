@@ -45,6 +45,15 @@ func (b *Branch) UniqueName() string {
 	return b.StringField("unique_name")
 }
 
+// Owner returns the Person that owns this branch.
+func (b *Branch) Owner() (*Person, error) {
+	p, err := b.Link("owner_link").Get(nil)
+	if err != nil {
+		return nil, err
+	}
+	return &Person{p}, nil
+}
+
 // OwnerName returns the name from the owner of this branch.
 func (b *Branch) OwnerName() string {
 	un := b.UniqueName()

@@ -168,6 +168,16 @@ func (person *Person) WebPage() string {
 	return person.StringField("web_link")
 }
 
+// PreferredEmail returns the Person's preferred email, as expected.
+func (person *Person) PreferredEmail() (string, error) {
+	// WTF.. seriously!?
+	e, err := person.Link("preferred_email_address_link").Get(nil)
+	if err != nil {
+		return "", err
+	}
+	return e.StringField("email"), nil
+}
+
 // IRCNicks returns a list of all IRC nicks for the person.
 func (person *Person) IRCNicks() (nicks []*IRCNick, err error) {
 	list, err := person.Link("irc_nicknames_collection_link").Get(nil)

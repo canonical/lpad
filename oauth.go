@@ -137,7 +137,7 @@ func (oauth *OAuth) Sign(req *http.Request) error {
 		`oauth_token="` + url.QueryEscape(oauth.Token) + `", ` +
 		`oauth_signature_method="PLAINTEXT", ` +
 		`oauth_signature="` + url.QueryEscape(`&`+oauth.TokenSecret) + `", ` +
-		`oauth_timestamp="` + strconv.Itoa64(time.Now().Unix()) + `", ` +
+		`oauth_timestamp="` + strconv.FormatInt(time.Now().Unix(), 10) + `", ` +
 		`oauth_nonce="` + strconv.Itoa(int(rand.Int31())) + `", ` +
 		`oauth_version="1.0"`
 

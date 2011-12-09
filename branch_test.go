@@ -223,3 +223,16 @@ func (s *ModelS) TestLandingCandidates(c *C) {
 	c.Assert(err, IsNil)
 	checkMPList(c, list)
 }
+
+func (s *ModelS) TestBranchOwner(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{"display_name": "Joe"}`)
+	m := M{"owner_link": testServer.URL + "/link"}
+	branch := &lpad.Branch{lpad.NewValue(nil, "", "", m)}
+	owner, err := branch.Owner()
+	c.Assert(err, IsNil)
+	c.Assert(owner.DisplayName(), Equals, "Joe")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.URL.Path, Equals, "/link")
+}
+

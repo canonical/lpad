@@ -259,3 +259,15 @@ func (s *ModelS) TestPersonNicks(c *C) {
 	c.Assert(nicks[0].Nick(), Equals, "canonical-nick")
 	c.Assert(nicks[1].Nick(), Equals, "freenode-nick")
 }
+
+func (s *ModelS) TestPersonPreferredEmail(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{"email": "the@email.com"}`)
+	m := M{"preferred_email_address_link": testServer.URL + "/link"}
+	person := &lpad.Person{lpad.NewValue(nil, "", "", m)}
+	email, err := person.PreferredEmail()
+	c.Assert(err, IsNil)
+	c.Assert(email, Equals, "the@email.com")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.URL.Path, Equals, "/link")
+}
