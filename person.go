@@ -168,7 +168,9 @@ func (person *Person) WebPage() string {
 	return person.StringField("web_link")
 }
 
-// PreferredEmail returns the Person's preferred email, as expected.
+// PreferredEmail returns the Person's preferred email. If the user
+// disabled public access to email addresses, this method returns an
+// *Error with StatusCode of 404.
 func (person *Person) PreferredEmail() (string, error) {
 	// WTF.. seriously!?
 	e, err := person.Link("preferred_email_address_link").Get(nil)
