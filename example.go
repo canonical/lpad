@@ -14,16 +14,13 @@ func check(err error) {
 func main() {
 	root, err := lpad.Login(lpad.Production, &lpad.ConsoleOAuth{})
 	check(err)
-	me, err := root.Me()
-	check(err)
-	fmt.Println(me.DisplayName())
 
 	//v, err := root.GetLocation("/bugs/123456")
 	//fmt.Printf("%#v\n", v.Map())
 
-	b, err := root.Branch("bzr+ssh://bazaar.launchpad.net/%2Bbranch/lbox/")
+	b, err := root.Branch("bzr+ssh://bazaar.launchpad.net/~cwayne18/%2Bjunk/xpresser-double-click/")
 	check(err)
-	println(b.UniqueName())
+	fmt.Printf("Unique name: %#v\n", b.Map())
 
 	//check(err)
 	//

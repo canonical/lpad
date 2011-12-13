@@ -35,13 +35,25 @@ func (s *ModelS) TestRootBranch(c *C) {
 	c.Assert(req.Form["url"], Equals, []string{"lp:~joe/project/branch-name"})
 
 	testServer.PrepareResponse(200, jsonType, data)
+	_, err = root.Branch("lp:~joe/+junk/foo")
+	c.Assert(err, IsNil)
+	req = testServer.WaitRequest()
+	c.Assert(req.Form["url"], Equals, []string{"lp:~joe/+junk/foo"})
+
+	testServer.PrepareResponse(200, jsonType, data)
+	_, err = root.Branch("lp:~joe/%2Bjunk/foo")
+	c.Assert(err, IsNil)
+	req = testServer.WaitRequest()
+	c.Assert(req.Form["url"], Equals, []string{"lp:~joe/+junk/foo"})
+
+	testServer.PrepareResponse(200, jsonType, data)
 	_, err = root.Branch("bzr+ssh://bazaar.launchpad.net/%2Bbranch/foo")
 	c.Assert(err, IsNil)
 	req = testServer.WaitRequest()
 	c.Assert(req.Form["url"], Equals, []string{"lp:foo"})
 
 	testServer.PrepareResponse(200, jsonType, data)
-	_, err = root.Branch("bzr+ssh://bazaar.launchpad.net/~branch/foo")
+	_, err = root.Branch("bzr+ssh://bazaar.launchpad.net/+branch/foo")
 	c.Assert(err, IsNil)
 	req = testServer.WaitRequest()
 	c.Assert(req.Form["url"], Equals, []string{"lp:foo"})
