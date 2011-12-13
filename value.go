@@ -339,7 +339,9 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 		}
 
 		if debugOn {
-			printDump(httputil.DumpRequest(req, false))
+			if err := printRequestDump(req); err != nil {
+				return nil, err
+			}
 		}
 
 		resp, err := httpClient.Do(req)
@@ -350,7 +352,9 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 		}
 
 		if debugOn {
-			printDump(httputil.DumpResponse(resp, false))
+			if err := printResponseDump(resp); err != nil {
+				return nil, err
+			}
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
@@ -428,10 +432,37 @@ func SetDebug(debug bool) {
 	debugOn = debug
 }
 
-func printDump(data []byte, err error) {
-	s := string(data)
-	if err != nil {
-		s = err.Error()
+func printRequestDump(req *http.Request) error {
+	if req.Body == nil {
+		req.Body = ioutil.NopCloser(bytes.NewBuffer(nil))
 	}
-	fmt.Fprintf(os.Stderr, "===== DEBUG =====\n%s\n=================\n", s)
+	data, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return err
+	}
+	req.Body.Close()
+	req.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+	dump, err := httputil.DumpRequest(req, true)
+	req.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+	if err != nil {
+		dump = []byte(err.Error())
+	}
+	fmt.Fprintf(os.Stderr, "===== DEBUG =====\n%s\n=================\n", dump)
+	return nil
+}
+
+func printResponseDump(resp *http.Response) error {
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	resp.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+	dump, err := httputil.DumpResponse(resp, true)
+	resp.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+	if err != nil {
+		dump = []byte(err.Error())
+	}
+	fmt.Fprintf(os.Stderr, "===== DEBUG =====\n%s\n=================\n", dump)
+	return nil
 }
