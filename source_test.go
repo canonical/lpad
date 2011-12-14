@@ -40,3 +40,29 @@ func (s *ModelS) TestSourcePackage(c *C) {
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/distroseries_link")
 }
+
+func (s *ModelS) TestDistroSourcePackage(c *C) {
+	m := M{
+		"name":                            "thename",
+		"display_name":                     "Display Name",
+		"title": "title",
+		"web_link":                        "http://page",
+		"self_link":                       "http://selfpage",
+		"distribution_link":               testServer.URL + "/distribution_link",
+	}
+	source := &lpad.DistroSourcePackage{lpad.NewValue(nil, "", "", m)}
+	c.Assert(source.Name(), Equals, "thename")
+	c.Assert(source.DisplayName(), Equals, "Display Name")
+	c.Assert(source.Title(), Equals, "title")
+	c.Assert(source.WebPage(), Equals, "http://page")
+	c.Assert(source.SelfLink(), Equals, "http://selfpage")
+
+	testServer.PrepareResponse(200, jsonType, `{"name": "distroname"}`)
+	distro, err := source.Distro()
+	c.Assert(err, IsNil)
+	c.Assert(distro.Name(), Equals, "distroname")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/distribution_link")
+}

@@ -272,27 +272,27 @@ func (d DistroSeries) Description() string {
 // SearchTasks returns the list of bug tasks matching the given criteria that
 // are associated with this distribution
 func (d *Distro) SearchTasks(tags string) (*BugTaskList, error) {
-    params := Params{"ws.op":"searchTasks", "tags": tags, "tags_combinator" :"All"}
-    v, err := d.Location("").Get(params)
+	params := Params{"ws.op": "searchTasks", "tags": tags, "tags_combinator": "All"}
+	v, err := d.Location("").Get(params)
 	if err != nil {
 		return nil, err
 	}
-    return &BugTaskList{v}, nil
+	return &BugTaskList{v}, nil
 }
 
 // SearchTasks returns the list of bug tasks matching the given criteria that
 // are associated with this distribution series
 func (d *DistroSeries) SearchTasks(tags string) (*BugTaskList, error) {
-    params := Params{"ws.op":"searchTasks", "tags": tags, "tags_combinator" :"All"}
-    v, err := d.Location("").Get(params)
+	params := Params{"ws.op": "searchTasks", "tags": tags, "tags_combinator": "All"}
+	v, err := d.Location("").Get(params)
 	if err != nil {
 		return nil, err
 	}
-    return &BugTaskList{v}, nil
+	return &BugTaskList{v}, nil
 }
 
-//GetBuildRecords gets a list of all the Build objects for this distribution series
-//for packages in the given pocket and with names matching source_name
+// GetBuildRecords gets a list of all the Build objects for this distribution series
+// for packages in the given pocket and with names matching source_name
 func (d *DistroSeries) GetBuildRecords(build_state BuildState, pocket Pocket, source_name string) (*BuildList, error) {
 	params := Params{"ws.op": "getBuildRecords",
 		"build_state": string(build_state)}
@@ -306,6 +306,26 @@ func (d *DistroSeries) GetBuildRecords(build_state BuildState, pocket Pocket, so
 		return nil, err
 	}
 	return &BuildList{v}, nil
+}
+
+// GetSourcePackage returns a DistroSourcePackage object from this distribution
+func (d *Distro) GetDistroSourcePackage(name string) (*DistroSourcePackage, error) {
+	params := Params{"ws.op": "getSourcePackage", "name": name}
+	v, err := d.Location("").Get(params)
+	if err != nil {
+		return nil, err
+	}
+	return &DistroSourcePackage{v}, nil
+}
+
+// GetSourcePackage returns a SourcePackage object from this series
+func (d *DistroSeries) GetSourcePackage(name string) (*SourcePackage, error) {
+	params := Params{"ws.op": "getSourcePackage", "name": name}
+	v, err := d.Location("").Get(params)
+	if err != nil {
+		return nil, err
+	}
+	return &SourcePackage{v}, nil
 }
 
 // SetName changes the series name, which must consists of only letters,
