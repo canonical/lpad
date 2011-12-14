@@ -1,24 +1,32 @@
 package lpad
 
-import "errors"
-import "strings"
+import (
+	"errors"
+	"net/url"
+	"strings"
+)
 
 var weirdPrefixes = []string{
-	"bzr+ssh://bazaar.launchpad.net/%2Bbranch/",
-	"bzr+ssh://bazaar.launchpad.net/~branch/",
+	// Launchpad failed to handle this one in getByUrl.
+	"bzr+ssh://bazaar.launchpad.net/+branch/",
 }
 
 // Branch returns a branch for the provided URL. The URL can be in
 // the short form lp: notation, or the web address rooted at
 // http://bazaar.launchpad.net/
-func (root *Root) Branch(url string) (*Branch, error) {
+func (root *Root) Branch(burl string) (*Branch, error) {
+	u, err := url.Parse(burl)
+	if err != nil {
+		return nil, err
+	}
+	burl = u.String() // Unescape.
 	for _, prefix := range weirdPrefixes {
-		if strings.HasPrefix(url, prefix) {
-			url = "lp:" + url[len(prefix):]
+		if strings.HasPrefix(burl, prefix) {
+			burl = "lp:" + burl[len(prefix):]
 			break
 		}
 	}
-	v, err := root.Location("/branches").Get(Params{"ws.op": "getByUrl", "url": url})
+	v, err := root.Location("/branches").Get(Params{"ws.op": "getByUrl", "url": burl})
 	if err != nil {
 		return nil, err
 	}
@@ -43,6 +51,15 @@ func (b *Branch) Id() string {
 // form lp:~user/project/branch-name.
 func (b *Branch) UniqueName() string {
 	return b.StringField("unique_name")
+}
+
+// Owner returns the Person that owns this branch.
+func (b *Branch) Owner() (*Person, error) {
+	p, err := b.Link("owner_link").Get(nil)
+	if err != nil {
+		return nil, err
+	}
+	return &Person{p}, nil
 }
 
 // OwnerName returns the name from the owner of this branch.
