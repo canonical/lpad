@@ -13,6 +13,7 @@ GOFILES=\
 	person.go\
 	project.go\
 	distro.go\
+	source.go\
 	session.go\
 	value.go\
 
