@@ -371,7 +371,6 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 				value.loc = v.AbsLoc()
 			}
 		}
-
 		if method == "GET" && shouldRedirect(resp.StatusCode) {
 			if location == "" {
 				msg := "Got redirection status " + strconv.Itoa(resp.StatusCode) + " without a Location"
@@ -380,20 +379,19 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 			value.loc = location
 			continue
 		}
-
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != 209 {
 			return nil, &Error{resp.StatusCode, body}
 		}
-
 		if method == "PATCH" && resp.StatusCode != 209 {
 			return nil, nil
 		}
-
 		ctype = resp.Header.Get("Content-Type")
 		if ctype != "application/json" {
 			return nil, errors.New("Non-JSON content-type: " + ctype)
 		}
-
+		if method == "GET" && len(body) > 0 && body[0] == 'n' && string(body) == "null" {
+			return nil, &Error{http.StatusNotFound, nil}
+		}
 		if err != nil {
 			return nil, err
 		}
