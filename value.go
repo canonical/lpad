@@ -339,7 +339,9 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 		}
 
 		if debugOn {
-			printDump(httputil.DumpRequest(req, false))
+			if err := printRequestDump(req); err != nil {
+				return nil, err
+			}
 		}
 
 		resp, err := httpClient.Do(req)
@@ -350,7 +352,9 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 		}
 
 		if debugOn {
-			printDump(httputil.DumpResponse(resp, false))
+			if err := printResponseDump(resp); err != nil {
+				return nil, err
+			}
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
@@ -367,7 +371,6 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 				value.loc = v.AbsLoc()
 			}
 		}
-
 		if method == "GET" && shouldRedirect(resp.StatusCode) {
 			if location == "" {
 				msg := "Got redirection status " + strconv.Itoa(resp.StatusCode) + " without a Location"
@@ -376,20 +379,19 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 			value.loc = location
 			continue
 		}
-
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != 209 {
 			return nil, &Error{resp.StatusCode, body}
 		}
-
 		if method == "PATCH" && resp.StatusCode != 209 {
 			return nil, nil
 		}
-
 		ctype = resp.Header.Get("Content-Type")
 		if ctype != "application/json" {
 			return nil, errors.New("Non-JSON content-type: " + ctype)
 		}
-
+		if method == "GET" && len(body) > 0 && body[0] == 'n' && string(body) == "null" {
+			return nil, &Error{http.StatusNotFound, nil}
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -428,10 +430,37 @@ func SetDebug(debug bool) {
 	debugOn = debug
 }
 
-func printDump(data []byte, err error) {
-	s := string(data)
-	if err != nil {
-		s = err.Error()
+func printRequestDump(req *http.Request) error {
+	if req.Body == nil {
+		req.Body = ioutil.NopCloser(bytes.NewBuffer(nil))
 	}
-	fmt.Fprintf(os.Stderr, "===== DEBUG =====\n%s\n=================\n", s)
+	data, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return err
+	}
+	req.Body.Close()
+	req.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+	dump, err := httputil.DumpRequest(req, true)
+	req.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+	if err != nil {
+		dump = []byte(err.Error())
+	}
+	fmt.Fprintf(os.Stderr, "===== DEBUG =====\n%s\n=================\n", dump)
+	return nil
+}
+
+func printResponseDump(resp *http.Response) error {
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	resp.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+	dump, err := httputil.DumpResponse(resp, true)
+	resp.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+	if err != nil {
+		dump = []byte(err.Error())
+	}
+	fmt.Fprintf(os.Stderr, "===== DEBUG =====\n%s\n=================\n", dump)
+	return nil
 }

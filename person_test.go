@@ -18,16 +18,12 @@ func (s *ModelS) TestRootMe(c *C) {
 	c.Assert(req.URL.Path, Equals, "/people/+me")
 }
 
-func (s *ModelS) TestRootPerson(c *C) {
+func (s *ModelS) TestRootMemberPerson(c *C) {
 	data := `{"display_name": "Joe"}`
 	testServer.PrepareResponse(200, jsonType, data)
 	testServer.PrepareResponse(200, jsonType, data)
 
 	root := &lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
-
-	person, err := root.Person("joe")
-	c.Assert(err, IsNil)
-	c.Assert(person.DisplayName(), Equals, "Joe")
 
 	member, err := root.Member("joe")
 	c.Assert(err, IsNil)
@@ -37,20 +33,14 @@ func (s *ModelS) TestRootPerson(c *C) {
 
 	req := testServer.WaitRequest()
 	c.Assert(req.URL.Path, Equals, "/~joe")
-	req = testServer.WaitRequest()
-	c.Assert(req.URL.Path, Equals, "/~joe")
 }
 
-func (s *ModelS) TestRootTeam(c *C) {
+func (s *ModelS) TestRootMemberTeam(c *C) {
 	data := `{"display_name": "Ensemble", "is_team": true}`
 	testServer.PrepareResponse(200, jsonType, data)
 	testServer.PrepareResponse(200, jsonType, data)
 
 	root := &lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
-
-	team, err := root.Team("ensemble")
-	c.Assert(err, IsNil)
-	c.Assert(team.DisplayName(), Equals, "Ensemble")
 
 	member, err := root.Member("ensemble")
 	c.Assert(err, IsNil)
@@ -59,8 +49,6 @@ func (s *ModelS) TestRootTeam(c *C) {
 	c.Assert(team.DisplayName(), Equals, "Ensemble")
 
 	req := testServer.WaitRequest()
-	c.Assert(req.URL.Path, Equals, "/~ensemble")
-	req = testServer.WaitRequest()
 	c.Assert(req.URL.Path, Equals, "/~ensemble")
 }
 
@@ -85,7 +73,7 @@ func (s *ModelS) TestRootFindMembers(c *C) {
 	c.Assert(list.TotalSize(), Equals, 2)
 
 	names := []string{}
-	list.For(func(v lpad.AnyValue) error {
+	list.For(func(v lpad.Member) error {
 		if v.BoolField("is_team") {
 			t := v.(*lpad.Team)
 			names = append(names, t.DisplayName())

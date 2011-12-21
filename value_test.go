@@ -78,6 +78,16 @@ func (s *ValueS) TestGet(c *C) {
 	c.Assert(req.Header.Get("Accept"), Equals, "application/json")
 }
 
+func (s *ValueS) TestGetNull(c *C) {
+	// In certain cases, like branch's getByUrl ws.op, Launchpad returns
+	// 200 + null for what is actually a not found object.
+	testServer.PrepareResponse(200, jsonType, "null")
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	o, err := v.Get(nil)
+	c.Assert(err, ErrorMatches, `Server returned 404 and no body.`)
+	c.Assert(o, IsNil)
+}
+
 func (s *ValueS) TestGetList(c *C) {
 	testServer.PrepareResponse(200, jsonType, `["a", "b", "c"]`)
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)

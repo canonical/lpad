@@ -1,7 +1,6 @@
 package lpad
 
 import (
-	"errors"
 	"net/url"
 )
 
@@ -19,32 +18,8 @@ func (root *Root) Me() (*Person, error) {
 	return &Person{me}, nil
 }
 
-// Person returns the Person with the provided username.
-func (root *Root) Person(username string) (*Person, error) {
-	v, err := root.Location("/~" + url.QueryEscape(username)).Get(nil)
-	if err != nil {
-		return nil, err
-	}
-	if v.BoolField("is_team") {
-		return nil, errors.New(username + " is a team, not a person")
-	}
-	return &Person{v}, nil
-}
-
-// Team returns the Team with the provided name.
-func (root *Root) Team(name string) (*Team, error) {
-	v, err := root.Location("/~" + url.QueryEscape(name)).Get(nil)
-	if err != nil {
-		return nil, err
-	}
-	if !v.BoolField("is_team") {
-		err = errors.New(name + " is not a team")
-	}
-	return &Team{v}, nil
-}
-
 // Member returns the Team or Person with the provided name or username.
-func (root *Root) Member(name string) (member AnyValue, err error) {
+func (root *Root) Member(name string) (Member, error) {
 	v, err := root.Location("/~" + url.QueryEscape(name)).Get(nil)
 	if err != nil {
 		return nil, err
@@ -94,7 +69,7 @@ type MemberList struct {
 // For iterates over the list of people and teams and calls f for each one.
 // If f returns a non-nil error, iteration will stop and the error will be
 // returned as the result of For.
-func (list *MemberList) For(f func(v AnyValue) error) error {
+func (list *MemberList) For(f func(v Member) error) error {
 	return list.Value.For(func(v *Value) error {
 		if v.BoolField("is_team") {
 			return f(&Team{v})
@@ -131,10 +106,32 @@ func (list *TeamList) For(f func(t *Team) error) error {
 	})
 }
 
+// Member is an interface implemented by both Person and Team.
+type Member interface {
+	AnyValue
+
+	DisplayName() string
+	SetDisplayName(name string)
+	Name() string
+	SetName(name string)
+	WebPage() string
+
+	// Member is a marker function for types satisfying the
+	// the Member interface. This is necessary for now because 
+	// the methods above are fairly common across several types,
+	// but this will likely be dropped in the future.
+	Member()
+}
+
 // The Person type represents a person in Launchpad.
 type Person struct {
 	*Value
 }
+
+var _ Member = (*Person)(nil)
+
+// Member is a marker method so Person satisfies the Member interface.
+func (person *Person) Member() {}
 
 // DisplayName returns the person's name as it would be displayed
 // throughout Launchpad.  Most people use their full name.
@@ -223,6 +220,11 @@ func (nick *IRCNick) SetNetwork(n string) {
 type Team struct {
 	*Value
 }
+
+var _ Member = (*Team)(nil)
+
+// Member is a marker method so Team satisfies the Member interface.
+func (team *Team) Member() {}
 
 // Name returns the team's name.  This is a short unique name, beginning with a
 // lower-case letter or number, and containing only letters, numbers, dots,
