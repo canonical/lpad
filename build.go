@@ -50,7 +50,7 @@ func (bl *BuildList) For(f func(b *Build) error) error {
 func (root *Root) Build(distro string, source string, id int) (*Build, error) {
 	v, err := root.Location("/" + distro + "/+source/" + source + "/" + strconv.Itoa(id)).Get(nil)
 	if err != nil {
-	    return nil, err
+		return nil, err
 	}
 	return &Build{v}, nil
 }
@@ -122,15 +122,21 @@ func (s *SPPH) PackageVersion() string {
 }
 
 // DistroSeries gets the distro series this is published in
-func (s *SPPH) DistroSeries() (*DistroSeries) {
-	v, _ := s.Link("distro_series_link").Get(nil)
-	return &DistroSeries{v}
+func (s *SPPH) DistroSeries() (*DistroSeries, error) {
+	v, err := s.Link("distro_series_link").Get(nil)
+	if err != nil {
+		return nil, err
+	}
+	return &DistroSeries{v}, nil
 }
 
 // Archive gets the archive this is published in
-func (s *SPPH) Archive() (*Archive) {
-	v, _ := s.Link("archive_link").Get(nil)
-	return &Archive{v}
+func (s *SPPH) Archive() (*Archive, error) {
+	v, err := s.Link("archive_link").Get(nil)
+	if err != nil {
+		return nil, err
+	}
+	return &Archive{v}, nil
 }
 
 // Component gets the component this package was published in (i.e. main,universe)
@@ -142,7 +148,7 @@ func (s *SPPH) Component() string {
 func (build *Build) CurrentSourcePublicationLink() (*SPPH, error) {
 	v, err := build.Link("current_source_publication_link").Get(nil)
 	if err != nil {
-	    return nil, err
+		return nil, err
 	}
 	return &SPPH{v}, nil
 }
