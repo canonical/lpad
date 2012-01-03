@@ -24,3 +24,25 @@ func (s *ModelS) TestBuilder(c *C) {
 	c.Assert(builder.VMHost(), Equals, "foobar")
 	c.Assert(builder.WebPage(), Equals, "http://page")
 }
+
+func (s *ModelS) TestBuilderList(c *C) {
+	data := `{
+		"total_size": 2,
+		"start": 0,
+        "entries": [
+            {"name":"builder1", "builderok":true},
+            {"name":"builder2", "builderok":true}
+            ]
+        }`
+
+	testServer.PrepareResponse(200, jsonType, data)
+	root := &lpad.Root{lpad.NewValue(nil, testServer.URL, "", nil)}
+
+	builders, err := root.Builders()
+	c.Assert(err, IsNil)
+	builders.For(func(builder *lpad.Builder) error {
+		c.Assert(builder.BuilderOK(), Equals, true)
+		return nil
+	})
+
+}
