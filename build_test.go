@@ -7,15 +7,16 @@ import (
 
 func (s *ModelS) TestBuild(c *C) {
 	m := M{
-		"title":          "thetitle",
-		"arch_tag":       "armel",
-		"buildstate":     "Failed to build",
-		"build_log_url":  "http://logurl",
-		"upload_log_url": "http://uploadurl",
-		"web_link":       "http://page",
-		"self_link":      "http://apipage",
-		"datecreated":    "2011-10-10T00:00:00",
-		"datebuilt":      "2011-10-10T00:00:10",
+		"title":                           "thetitle",
+		"arch_tag":                        "armel",
+		"buildstate":                      "Failed to build",
+		"build_log_url":                   "http://logurl",
+		"upload_log_url":                  "http://uploadurl",
+		"web_link":                        "http://page",
+		"self_link":                       "http://apipage",
+		"datecreated":                     "2011-10-10T00:00:00",
+		"datebuilt":                       "2011-10-10T00:00:10",
+		"current_source_publication_link": testServer.URL + "/current_source_publication_link",
 	}
 	build := &lpad.Build{lpad.NewValue(nil, "", "", m)}
 	c.Assert(build.Title(), Equals, "thetitle")
@@ -28,6 +29,25 @@ func (s *ModelS) TestBuild(c *C) {
 	c.Assert(build.DateCreated(), Equals, "2011-10-10T00:00:00")
 	c.Assert(build.DateBuilt(), Equals, "2011-10-10T00:00:10")
 
+	testServer.PrepareResponse(200, jsonType, `{"source_package_name": "packagename"}`)
+	spph, err := build.CurrentSourcePublicationLink()
+	c.Assert(err, IsNil)
+	c.Assert(spph.PackageName(), Equals, "packagename")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/current_source_publication_link")
+}
+
+func (s *ModelS) TestBuildRetry(c *C) {
+	testServer.PrepareResponse(200, jsonType, "{}")
+	build := &lpad.Build{lpad.NewValue(nil, testServer.URL, testServer.URL, nil)}
+	err := build.Retry()
+	c.Assert(err, IsNil)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "POST")
+	c.Assert(req.Form["ws.op"], Equals, []string{"retry"})
 }
 
 func (s *ModelS) TestSPPH(c *C) {

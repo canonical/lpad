@@ -67,7 +67,7 @@ func (build *Build) ArchTag() string {
 
 // Retry gives back a failed build to the builder farm
 func (build *Build) Retry() error {
-	_, err := build.Post(Params{"ws_op": "retry"})
+	_, err := build.Post(Params{"ws.op": "retry"})
 	return err
 }
 
