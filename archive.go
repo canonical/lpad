@@ -20,10 +20,13 @@ func (a *Archive) Description() string {
 	return a.StringField("description")
 }
 
-// Distribution returns the distribution that uses this archive
-func (a *Archive) Distribution() *Distro {
-	v, _ := a.Link("distribution_link").Get(nil)
-	return &Distro{v}
+// Distro returns the distribution that uses this archive
+func (a *Archive) Distro() (*Distro, error) {
+	v, err := a.Link("distribution_link").Get(nil)
+	if err != nil {
+		return nil, err
+	}
+	return &Distro{v}, nil
 }
 
 // SelfLink returns the API URL of this Archive object
@@ -39,14 +42,16 @@ func (a *Archive) WebPage() string {
 // GetPublishedSources returns a list of SPPH records of this archive
 // that match the given criteria
 func (a *Archive) GetPublishedSources(source string) (*SPPHList, error) {
-	p := Params{"ws.op": "getPublishedSources",
+	params := Params{
+		"ws.op":       "getPublishedSources",
 		"source_name": source,
 		"exact_match": "true",
 		"pocket":      "Release",
-		"status":      "Published"}
-	v, err := a.Location(a.SelfLink()).Get(p)
+		"status":      "Published",
+	}
+	v, err := a.Location("").Get(params)
 	if err != nil {
-	    return nil, err
+		return nil, err
 	}
 	return &SPPHList{v}, nil
 }
