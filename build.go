@@ -50,10 +50,11 @@ func (bl *BuildList) For(f func(b *Build) error) error {
 }
 
 // Build returns the identified package build.
-func (root *Root) Build(distro string, source string, id int) (*Build, error) {
+func (root *Root) Build(distro string, source string, version string, id int) (*Build, error) {
 	distro = url.QueryEscape(distro)
 	source = url.QueryEscape(source)
-	path := fmt.Sprintf("/%s/+source/%s/%d/", distro, source, id)
+	version = url.QueryEscape(version)
+	path := fmt.Sprintf("/%s/+source/%s/%s/+build/%d/", distro, source, version, id)
 	v, err := root.Location(path).Get(nil)
 	if err != nil {
 		return nil, err
@@ -112,7 +113,7 @@ type PubHistory struct {
 	*Value
 }
 
-// PubHistory gets the the source publication history corresponding to build.
+// PubHistory returns the source publication history corresponding to build.
 func (build *Build) PubHistory() (*PubHistory, error) {
 	v, err := build.Link("current_source_publication_link").Get(nil)
 	if err != nil {
@@ -121,12 +122,12 @@ func (build *Build) PubHistory() (*PubHistory, error) {
 	return &PubHistory{v}, nil
 }
 
-// PackageName gets the source package name of ph.
+// PackageName returns the source package name of ph.
 func (ph *PubHistory) PackageName() string {
 	return ph.StringField("source_package_name")
 }
 
-// PackageVersion gets the  package version of ph.
+// PackageVersion returns the package version of ph.
 func (ph *PubHistory) PackageVersion() string {
 	return ph.StringField("source_package_version")
 }
@@ -140,7 +141,7 @@ func (ph *PubHistory) DistroSeries() (*DistroSeries, error) {
 	return &DistroSeries{v}, nil
 }
 
-// Archive returns the archive packages are published into.
+// Archive returns the archive the packages are published into.
 func (ph *PubHistory) Archive() (*Archive, error) {
 	v, err := ph.Link("archive_link").Get(nil)
 	if err != nil {
