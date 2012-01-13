@@ -10,7 +10,6 @@ func (s *ModelS) TestArchive(c *C) {
 		"name":              "thename",
 		"displayname":       "The Name",
 		"description":       "The Description",
-		"self_link":         "http://apipage",
 		"web_link":          "http://page",
 		"distribution_link": testServer.URL + "/distribution_link",
 	}
@@ -18,7 +17,6 @@ func (s *ModelS) TestArchive(c *C) {
 	c.Assert(archive.Name(), Equals, "thename")
 	c.Assert(archive.DisplayName(), Equals, "The Name")
 	c.Assert(archive.Description(), Equals, "The Description")
-	c.Assert(archive.SelfLink(), Equals, "http://apipage")
 	c.Assert(archive.WebPage(), Equals, "http://page")
 
 	testServer.PrepareResponse(200, jsonType, `{"name": "distroname"}`)
@@ -31,7 +29,7 @@ func (s *ModelS) TestArchive(c *C) {
 	c.Assert(req.URL.Path, Equals, "/distribution_link")
 }
 
-func (s *ModelS) TestArchiveSources(c *C) {
+func (s *ModelS) TestArchivePubHistory(c *C) {
 	data := `{ "total_size": 2,
 		"start": 0,
 		"entries": [
@@ -42,10 +40,10 @@ func (s *ModelS) TestArchiveSources(c *C) {
 
 	testServer.PrepareResponse(200, jsonType, data)
 	archive := &lpad.Archive{lpad.NewValue(nil, testServer.URL, testServer.URL+"/archive", nil)}
-	spphlist, err := archive.GetPublishedSources("whatever")
+	phlist, err := archive.PubHistory("whatever", "Published")
 	c.Assert(err, IsNil)
-	spphlist.For(func(spph *lpad.SPPH) error {
-		c.Assert(spph.PackageName(), Equals, "whatever")
+	phlist.For(func(ph *lpad.PubHistory) error {
+		c.Assert(ph.PackageName(), Equals, "whatever")
 		return nil
 	})
 

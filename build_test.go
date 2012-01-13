@@ -13,26 +13,24 @@ func (s *ModelS) TestBuild(c *C) {
 		"build_log_url":                   "http://logurl",
 		"upload_log_url":                  "http://uploadurl",
 		"web_link":                        "http://page",
-		"self_link":                       "http://apipage",
 		"datecreated":                     "2011-10-10T00:00:00",
 		"datebuilt":                       "2011-10-10T00:00:10",
 		"current_source_publication_link": testServer.URL + "/current_source_publication_link",
 	}
 	build := &lpad.Build{lpad.NewValue(nil, "", "", m)}
 	c.Assert(build.Title(), Equals, "thetitle")
-	c.Assert(build.ArchTag(), Equals, "armel")
-	c.Assert(build.State(), Equals, "Failed to build")
+	c.Assert(build.Arch(), Equals, "armel")
+	c.Assert(build.State(), Equals, lpad.BuildState("Failed to build"))
 	c.Assert(build.BuildLogURL(), Equals, "http://logurl")
 	c.Assert(build.UploadLogURL(), Equals, "http://uploadurl")
 	c.Assert(build.WebPage(), Equals, "http://page")
-	c.Assert(build.SelfLink(), Equals, "http://apipage")
 	c.Assert(build.DateCreated(), Equals, "2011-10-10T00:00:00")
 	c.Assert(build.DateBuilt(), Equals, "2011-10-10T00:00:10")
 
 	testServer.PrepareResponse(200, jsonType, `{"source_package_name": "packagename"}`)
-	spph, err := build.CurrentSourcePublicationLink()
+	ph, err := build.PubHistory()
 	c.Assert(err, IsNil)
-	c.Assert(spph.PackageName(), Equals, "packagename")
+	c.Assert(ph.PackageName(), Equals, "packagename")
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
@@ -50,7 +48,7 @@ func (s *ModelS) TestBuildRetry(c *C) {
 	c.Assert(req.Form["ws.op"], Equals, []string{"retry"})
 }
 
-func (s *ModelS) TestSPPH(c *C) {
+func (s *ModelS) TestPubHistory(c *C) {
 	m := M{
 		"source_package_name":    "pkgname",
 		"source_package_version": "pkgversion",
@@ -58,18 +56,18 @@ func (s *ModelS) TestSPPH(c *C) {
 		"distro_series_link":     testServer.URL + "/distro_series_link",
 		"archive_link":           testServer.URL + "/archive_link",
 	}
-	spph := &lpad.SPPH{lpad.NewValue(nil, "", "", m)}
-	c.Assert(spph.PackageName(), Equals, "pkgname")
-	c.Assert(spph.PackageVersion(), Equals, "pkgversion")
-	c.Assert(spph.Component(), Equals, "main")
+	ph := &lpad.PubHistory{lpad.NewValue(nil, "", "", m)}
+	c.Assert(ph.PackageName(), Equals, "pkgname")
+	c.Assert(ph.PackageVersion(), Equals, "pkgversion")
+	c.Assert(ph.Component(), Equals, "main")
 
 	testServer.PrepareResponse(200, jsonType, `{"name": "archivename"}`)
-	archive, err := spph.Archive()
+	archive, err := ph.Archive()
 	c.Assert(err, IsNil)
 	c.Assert(archive.Name(), Equals, "archivename")
 
 	testServer.PrepareResponse(200, jsonType, `{"name": "seriesname"}`)
-	series, err := spph.DistroSeries()
+	series, err := ph.DistroSeries()
 	c.Assert(err, IsNil)
 	c.Assert(series.Name(), Equals, "seriesname")
 }
