@@ -19,6 +19,26 @@ type Distro struct {
 	*Value
 }
 
+type DistroList struct {
+	*Value
+}
+
+//Distros returns the list of all distributions registered in Launchpad
+func (root *Root) Distros() (*DistroList, error) {
+	list, err := root.Location("/distros/").Get(nil)
+	if err != nil {
+		return nil, err
+	}
+	return &DistroList{list}, nil
+}
+
+//For calls a function on each distro in the list
+func (list *DistroList) For(f func(d *Distro) error) {
+	list.Value.For(func(v *Value) error {
+		return f(&Distro{v})
+	})
+}
+
 // Name returns the distribution name, which is composed of at least one
 // lowercase letter or number, followed by letters, numbers, dots,
 // hyphens or pluses. This is a short name used in URLs.
@@ -150,6 +170,15 @@ func (d *Distro) ActiveMilestones() (*MilestoneList, error) {
 	return &MilestoneList{r}, nil
 }
 
+// Series returns the named series of this distribution.
+func (d *Distro) Series(name string) (*DistroSeries, error) {
+	s, err := d.Location(url.QueryEscape(name)).Get(nil)
+	if err != nil {
+		return nil, err
+	}
+	return &DistroSeries{s}, nil
+}
+
 // AllSeries returns the list of series associated with the distribution.
 func (d *Distro) AllSeries() (*DistroSeriesList, error) {
 	r, err := d.Link("series_collection_link").Get(nil)
@@ -157,6 +186,24 @@ func (d *Distro) AllSeries() (*DistroSeriesList, error) {
 		return nil, err
 	}
 	return &DistroSeriesList{r}, nil
+}
+
+// Archives returns the list of archives associated with the distribution.
+func (d *Distro) Archives() (*ArchiveList, error) {
+	r, err := d.Link("archives_collection_link").Get(nil)
+	if err != nil {
+		return nil, err
+	}
+	return &ArchiveList{r}, nil
+}
+
+// Archive returns the named archive associated with the distribution
+func (d *Distro) Archive(name string) (*Archive, error) {
+	v, err := d.Location("").Get(Params{"ws.op": "getArchive", "name": name})
+	if err != nil {
+		return nil, err
+	}
+	return &Archive{v}, nil
 }
 
 // FocusDistroSeries returns the distribution series set as the current
@@ -181,9 +228,25 @@ func (s *DistroSeries) Name() string {
 	return s.StringField("name")
 }
 
+// DisplayName returns the distribution series display name, for instance Oneiric
+func (d *DistroSeries) DisplayName() string {
+	return d.StringField("displayname")
+}
+
+// FullSeriesName returns the distribution series name as it would be displayed
+// in a paragraph. For example, a series's full name might be "Oneiric Ocelot"
+func (d *DistroSeries) FullSeriesName() string {
+	return d.StringField("fullseriesname")
+}
+
 // Title returns the series context title for pages.
 func (s *DistroSeries) Title() string {
 	return s.StringField("title")
+}
+
+// SelfLink returns the API URL of this distro series
+func (s *DistroSeries) SelfLink() string {
+	return s.StringField("self_link")
 }
 
 // Summary returns the summary for this distribution series.
@@ -198,7 +261,71 @@ func (s *DistroSeries) WebPage() string {
 
 // Active returns true if this distribution series is still in active development.
 func (s *DistroSeries) Active() bool {
-	return s.BoolField("is_active")
+	return s.BoolField("active")
+}
+
+// Description returns the distribution series' description.
+func (d DistroSeries) Description() string {
+	return d.StringField("description")
+}
+
+// SearchTasks returns the list of bug tasks matching the given criteria that
+// are associated with this distribution
+func (d *Distro) SearchTasks(tags string) (*BugTaskList, error) {
+	params := Params{"ws.op": "searchTasks", "tags": tags, "tags_combinator": "All"}
+	v, err := d.Location("").Get(params)
+	if err != nil {
+		return nil, err
+	}
+	return &BugTaskList{v}, nil
+}
+
+// SearchTasks returns the list of bug tasks matching the given criteria that
+// are associated with this distribution series
+func (d *DistroSeries) SearchTasks(tags string) (*BugTaskList, error) {
+	params := Params{"ws.op": "searchTasks", "tags": tags, "tags_combinator": "All"}
+	v, err := d.Location("").Get(params)
+	if err != nil {
+		return nil, err
+	}
+	return &BugTaskList{v}, nil
+}
+
+// GetBuildRecords gets a list of all the Build objects for this distribution series
+// for packages in the given pocket and with names matching source_name
+func (d *DistroSeries) GetBuildRecords(build_state BuildState, pocket Pocket, source_name string) (*BuildList, error) {
+	params := Params{"ws.op": "getBuildRecords",
+		"build_state": string(build_state)}
+	if pocket != PocketAny {
+		params["pocket"] = string(pocket)
+	}
+	params["source_name"] = source_name
+
+	v, err := d.Location("").Get(params)
+	if err != nil {
+		return nil, err
+	}
+	return &BuildList{v}, nil
+}
+
+// GetSourcePackage returns a DistroSourcePackage object from this distribution
+func (d *Distro) GetDistroSourcePackage(name string) (*DistroSourcePackage, error) {
+	params := Params{"ws.op": "getSourcePackage", "name": name}
+	v, err := d.Location("").Get(params)
+	if err != nil {
+		return nil, err
+	}
+	return &DistroSourcePackage{v}, nil
+}
+
+// GetSourcePackage returns a SourcePackage object from this series
+func (d *DistroSeries) GetSourcePackage(name string) (*SourcePackage, error) {
+	params := Params{"ws.op": "getSourcePackage", "name": name}
+	v, err := d.Location("").Get(params)
+	if err != nil {
+		return nil, err
+	}
+	return &SourcePackage{v}, nil
 }
 
 // SetName changes the series name, which must consists of only letters,
@@ -219,7 +346,7 @@ func (s *DistroSeries) SetSummary(summary string) {
 
 // SetActive sets whether the series is still in active development or not.
 func (s *DistroSeries) SetActive(active bool) {
-	s.SetField("is_active", active)
+	s.SetField("active", active)
 }
 
 // The DistroSeriesList represents a list of distribution series.
