@@ -18,9 +18,8 @@ func (s *ModelS) TestSourcePackage(c *C) {
 	source := &lpad.SourcePackage{lpad.NewValue(nil, "", "", m)}
 	c.Assert(source.Name(), Equals, "thename")
 	c.Assert(source.DisplayName(), Equals, "Display Name")
-	c.Assert(source.Component(), Equals, "universe")
+	c.Assert(source.LatestComponent(), Equals, "universe")
 	c.Assert(source.WebPage(), Equals, "http://page")
-	c.Assert(source.SelfLink(), Equals, "http://selfpage")
 
 	testServer.PrepareResponse(200, jsonType, `{"name": "distroname"}`)
 	distro, err := source.Distro()
@@ -55,7 +54,6 @@ func (s *ModelS) TestDistroSourcePackage(c *C) {
 	c.Assert(source.DisplayName(), Equals, "Display Name")
 	c.Assert(source.Title(), Equals, "title")
 	c.Assert(source.WebPage(), Equals, "http://page")
-	c.Assert(source.SelfLink(), Equals, "http://selfpage")
 
 	testServer.PrepareResponse(200, jsonType, `{"name": "distroname"}`)
 	distro, err := source.Distro()

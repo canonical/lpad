@@ -29,7 +29,7 @@ func (s *ModelS) TestArchive(c *C) {
 	c.Assert(req.URL.Path, Equals, "/distribution_link")
 }
 
-func (s *ModelS) TestArchivePubHistory(c *C) {
+func (s *ModelS) TestArchivePublication(c *C) {
 	data := `{ "total_size": 2,
 		"start": 0,
 		"entries": [
@@ -40,9 +40,9 @@ func (s *ModelS) TestArchivePubHistory(c *C) {
 
 	testServer.PrepareResponse(200, jsonType, data)
 	archive := &lpad.Archive{lpad.NewValue(nil, testServer.URL, testServer.URL+"/archive", nil)}
-	phlist, err := archive.PubHistory("whatever", "Published")
+	phlist, err := archive.Publication("whatever", "Published")
 	c.Assert(err, IsNil)
-	phlist.For(func(ph *lpad.PubHistory) error {
+	phlist.For(func(ph *lpad.Publication) error {
 		c.Assert(ph.PackageName(), Equals, "whatever")
 		return nil
 	})

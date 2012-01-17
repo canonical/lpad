@@ -14,16 +14,7 @@ func (root *Root) Distro(name string) (*Distro, error) {
 	return &Distro{r}, nil
 }
 
-// The Distro type represents a distribution in Launchpad.
-type Distro struct {
-	*Value
-}
-
-type DistroList struct {
-	*Value
-}
-
-//Distros returns the list of all distributions registered in Launchpad
+// Distros returns the list of all distributions registered in Launchpad.
 func (root *Root) Distros() (*DistroList, error) {
 	list, err := root.Location("/distros/").Get(nil)
 	if err != nil {
@@ -32,7 +23,19 @@ func (root *Root) Distros() (*DistroList, error) {
 	return &DistroList{list}, nil
 }
 
-//For calls a function on each distro in the list
+// The Distro type represents a distribution in Launchpad.
+type Distro struct {
+	*Value
+}
+
+// The DistroList type represents a list of Distro objects.
+type DistroList struct {
+	*Value
+}
+
+// For iterates over the list of distributions and calls f for each one.
+// If f returns a non-nil error, iteration will stop and the error will be
+// returned as the result of For.
 func (list *DistroList) For(f func(d *Distro) error) {
 	list.Value.For(func(v *Value) error {
 		return f(&Distro{v})
@@ -170,7 +173,7 @@ func (d *Distro) ActiveMilestones() (*MilestoneList, error) {
 	return &MilestoneList{r}, nil
 }
 
-// Series returns the named series of this distribution.
+// Series returns the named Series of this distribution.
 func (d *Distro) Series(name string) (*DistroSeries, error) {
 	s, err := d.Location(url.QueryEscape(name)).Get(nil)
 	if err != nil {
@@ -228,13 +231,13 @@ func (s *DistroSeries) Name() string {
 	return s.StringField("name")
 }
 
-// DisplayName returns the distribution series display name, for instance Oneiric
+// DisplayName returns the distribution series display name (e.g. "Oneiric").
 func (d *DistroSeries) DisplayName() string {
 	return d.StringField("displayname")
 }
 
 // FullSeriesName returns the distribution series name as it would be displayed
-// in a paragraph. For example, a series's full name might be "Oneiric Ocelot"
+// in a paragraph (e.g. "Oneiric Ocelot").
 func (d *DistroSeries) FullSeriesName() string {
 	return d.StringField("fullseriesname")
 }
@@ -242,11 +245,6 @@ func (d *DistroSeries) FullSeriesName() string {
 // Title returns the series context title for pages.
 func (s *DistroSeries) Title() string {
 	return s.StringField("title")
-}
-
-// SelfLink returns the API URL of this distro series
-func (s *DistroSeries) SelfLink() string {
-	return s.StringField("self_link")
 }
 
 // Summary returns the summary for this distribution series.
@@ -269,47 +267,65 @@ func (d DistroSeries) Description() string {
 	return d.StringField("description")
 }
 
-// SearchTasks returns the list of bug tasks matching the given criteria that
-// are associated with this distribution
-func (d *Distro) SearchTasks(tags string) (*BugTaskList, error) {
-	params := Params{"ws.op": "searchTasks", "tags": tags, "tags_combinator": "All"}
-	v, err := d.Location("").Get(params)
-	if err != nil {
-		return nil, err
-	}
-	return &BugTaskList{v}, nil
-}
+// TODO: These have no tests.
+//
+//type TagMatching string
+//
+//const (
+//	MatchAny TagMatching = "Any"
+//	MatchAll TagMatching = "All"
+//)
+//
+//// SearchTasks returns the list of bug tasks associated with this
+//// distribution that match the given criteria.
+//func (d *Distro) SearchTasks(tags string, matching TagMatching) (*BugTaskList, error) {
+//	params := Params{
+//		"ws.op": "searchTasks",
+//		"tags": tags,
+//		"tags_combinator": string(matching),
+//	}
+//	v, err := d.Location("").Get(params)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return &BugTaskList{v}, nil
+//}
+//
+//// SearchTasks returns the list of bug tasks associated with this
+//// distribution series that match the given criteria.
+//func (d *DistroSeries) SearchTasks(tags string, matching TagMatching) (*BugTaskList, error) {
+//	params := Params{
+//		"ws.op": "searchTasks",
+//		"tags": tags,
+//		"tags_combinator": string(match),
+//	}
+//	v, err := d.Location("").Get(params)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return &BugTaskList{v}, nil
+//}
+//
+//// Builds returns a list of all the Build objects for this distribution
+//// series for the source packages matching the given criteria.
+//func (d *DistroSeries) Builds(buildState BuildState, pocket Pocket, sourceName string) (*BuildList, error) {
+//	params := Params{
+//		"ws.op": "getBuildRecords",
+//		"build_state": string(buildState),
+//		"source_name": sourceName,
+//	}
+//	if pocket != PocketAny {
+//		params["pocket"] = string(pocket)
+//	}
+//	v, err := d.Location("").Get(params)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return &BuildList{v}, nil
+//}
 
-// SearchTasks returns the list of bug tasks matching the given criteria that
-// are associated with this distribution series
-func (d *DistroSeries) SearchTasks(tags string) (*BugTaskList, error) {
-	params := Params{"ws.op": "searchTasks", "tags": tags, "tags_combinator": "All"}
-	v, err := d.Location("").Get(params)
-	if err != nil {
-		return nil, err
-	}
-	return &BugTaskList{v}, nil
-}
-
-// GetBuildRecords gets a list of all the Build objects for this distribution series
-// for packages in the given pocket and with names matching source_name
-func (d *DistroSeries) GetBuildRecords(build_state BuildState, pocket Pocket, source_name string) (*BuildList, error) {
-	params := Params{"ws.op": "getBuildRecords",
-		"build_state": string(build_state)}
-	if pocket != PocketAny {
-		params["pocket"] = string(pocket)
-	}
-	params["source_name"] = source_name
-
-	v, err := d.Location("").Get(params)
-	if err != nil {
-		return nil, err
-	}
-	return &BuildList{v}, nil
-}
-
-// GetSourcePackage returns a DistroSourcePackage object from this distribution
-func (d *Distro) GetDistroSourcePackage(name string) (*DistroSourcePackage, error) {
+// DistroSourcePackage returns the DistroSourcePackage with the given name.
+func (d *Distro) DistroSourcePackage(name string) (*DistroSourcePackage, error) {
 	params := Params{"ws.op": "getSourcePackage", "name": name}
 	v, err := d.Location("").Get(params)
 	if err != nil {
@@ -318,8 +334,8 @@ func (d *Distro) GetDistroSourcePackage(name string) (*DistroSourcePackage, erro
 	return &DistroSourcePackage{v}, nil
 }
 
-// GetSourcePackage returns a SourcePackage object from this series
-func (d *DistroSeries) GetSourcePackage(name string) (*SourcePackage, error) {
+// SourcePackage returns the SourcePackage with the given name.
+func (d *DistroSeries) SourcePackage(name string) (*SourcePackage, error) {
 	params := Params{"ws.op": "getSourcePackage", "name": name}
 	v, err := d.Location("").Get(params)
 	if err != nil {

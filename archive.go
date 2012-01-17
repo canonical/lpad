@@ -44,12 +44,12 @@ const (
 	PubObsolete   PublishStatus = "Obsolete"
 )
 
-// PubHistory returns a list of PubHistory records of this archive
-// that match the given criteria.
-func (a *Archive) PubHistory(source string, status PublishStatus) (*PubHistoryList, error) {
+// Publication returns the publication history for the sourceName
+// source package in this archive that has the given status.
+func (a *Archive) Publication(sourceName string, status PublishStatus) (*PublicationList, error) {
 	params := Params{
 		"ws.op":       "getPublishedSources",
-		"source_name": source,
+		"source_name": sourceName,
 		"exact_match": "true",
 		"pocket":      "Release",
 		"status":      string(status),
@@ -58,15 +58,17 @@ func (a *Archive) PubHistory(source string, status PublishStatus) (*PubHistoryLi
 	if err != nil {
 		return nil, err
 	}
-	return &PubHistoryList{v}, nil
+	return &PublicationList{v}, nil
 }
 
-// ArchiveList is a list of Archive objects used for iterating.
+// ArchiveList represents a list of Archive objects.
 type ArchiveList struct {
 	*Value
 }
 
-//For iterates over a list of archives and calls a function on each.
+// For iterates over the list of archive objects and calls f for each one.
+// If f returns a non-nil error, iteration will stop and the error will be
+// returned as the result of For.
 func (list *ArchiveList) For(f func(a *Archive) error) error {
 	return list.Value.For(func(v *Value) error {
 		return f(&Archive{v})

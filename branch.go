@@ -286,8 +286,7 @@ func (mp *MergeProposal) AddComment(subject, message string, vote ProposalVote, 
 	return err
 }
 
-// The MergeProposalList type encapsulates a list of MergeProposal
-// elements for iteration.
+// The MergeProposalList represents a list of MergeProposal objects.
 type MergeProposalList struct {
 	*Value
 }

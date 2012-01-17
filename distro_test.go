@@ -23,6 +23,7 @@ func (s *ModelS) TestDistro(c *C) {
 	c.Assert(distro.Summary(), Equals, "Summary")
 	c.Assert(distro.Description(), Equals, "Description")
 	c.Assert(distro.WebPage(), Equals, "http://page")
+
 	distro.SetName("newname")
 	distro.SetDisplayName("New Display Name")
 	distro.SetTitle("New Title")
@@ -46,14 +47,14 @@ func (s *ModelS) TestDistro(c *C) {
 
 func (s *ModelS) TestDistroSeries(c *C) {
 	m := M{
-		"name":        "thename",
-		"displayname":           "Display Name",
-		"fullseriesname":         "Full Series Name",
-		"title":       "Title",
-		"summary":     "Summary",
-		"description":     "Description",
-		"active":   true,
-		"web_link":    "http://page",
+		"name":           "thename",
+		"displayname":    "Display Name",
+		"fullseriesname": "Full Series Name",
+		"title":          "Title",
+		"summary":        "Summary",
+		"description":    "Description",
+		"active":         true,
+		"web_link":       "http://page",
 	}
 
 	series := &lpad.DistroSeries{lpad.NewValue(nil, "", "", m)}
@@ -65,6 +66,7 @@ func (s *ModelS) TestDistroSeries(c *C) {
 	c.Assert(series.Description(), Equals, "Description")
 	c.Assert(series.Active(), Equals, true)
 	c.Assert(series.WebPage(), Equals, "http://page")
+
 	series.SetName("newname")
 	series.SetTitle("New Title")
 	series.SetSummary("New summary")

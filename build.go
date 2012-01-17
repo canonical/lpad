@@ -37,12 +37,14 @@ type Build struct {
 	*Value
 }
 
-// The BuildList type represents a list of Build objects.
+// The BuildList type represents a list of package Build objects.
 type BuildList struct {
 	*Value
 }
 
-// For calls the function f on each Build in the BuildList.
+// For iterates over the list of package builds and calls f for each one.
+// If f returns a non-nil error, iteration will stop and the error will be
+// returned as the result of For.
 func (bl *BuildList) For(f func(b *Build) error) error {
 	return bl.Value.For(func(v *Value) error {
 		return f(&Build{v})
@@ -62,23 +64,23 @@ func (root *Root) Build(distro string, source string, version string, id int) (*
 	return &Build{v}, nil
 }
 
-// Title is the title of build.
+// Title returns the build title.
 func (build *Build) Title() string {
 	return build.StringField("title")
 }
 
-// Arch is the architecture of build.
+// Arch returns the architecture of build.
 func (build *Build) Arch() string {
 	return build.StringField("arch_tag")
 }
 
-// Retry sends back a failed build to the builder farm.
+// Retry sends a failed build back to the builder farm.
 func (build *Build) Retry() error {
 	_, err := build.Post(Params{"ws.op": "retry"})
 	return err
 }
 
-// WebPage is the webpage of build in Launchpad.
+// WebPage returns the URL for accessing this build in a browser.
 func (build *Build) WebPage() string {
 	return build.StringField("web_link")
 }
@@ -88,81 +90,83 @@ func (build *Build) State() BuildState {
 	return BuildState(build.StringField("buildstate"))
 }
 
-// BuildLogURL is the URL of the gzipped build log file of build.
+// BuildLogURL returns the URL for the build log file.
 func (build *Build) BuildLogURL() string {
 	return build.StringField("build_log_url")
 }
 
-// UploadLogURL is the URL of the upload log if there was an upload failure.
+// UploadLogURL returns the URL for the upload log if there was an upload failure.
 func (build *Build) UploadLogURL() string {
 	return build.StringField("upload_log_url")
 }
 
-// DateCreated is the date when build was created.
-func (build *Build) DateCreated() string {
+// Created returns the timestamp when the build farm job was created.
+func (build *Build) Created() string {
 	return build.StringField("datecreated")
 }
 
-// DateBuilt is the date when build finished.
-func (build *Build) DateBuilt() string {
+// Finished returns the timestamp when the build farm job was finished.
+func (build *Build) Finished() string {
 	return build.StringField("datebuilt")
 }
 
-// The PubHistory type holds the source package publication history.
-type PubHistory struct {
+// The Publication type holds a source package's publication record.
+type Publication struct {
 	*Value
 }
 
-// PubHistory returns the source publication history corresponding to build.
-func (build *Build) PubHistory() (*PubHistory, error) {
+// Publication returns the source publication record corresponding to build.
+func (build *Build) Publication() (*Publication, error) {
 	v, err := build.Link("current_source_publication_link").Get(nil)
 	if err != nil {
 		return nil, err
 	}
-	return &PubHistory{v}, nil
+	return &Publication{v}, nil
 }
 
-// PackageName returns the source package name of ph.
-func (ph *PubHistory) PackageName() string {
-	return ph.StringField("source_package_name")
+// PackageName returns the name of the published source package.
+func (p *Publication) PackageName() string {
+	return p.StringField("source_package_name")
 }
 
-// PackageVersion returns the package version of ph.
-func (ph *PubHistory) PackageVersion() string {
-	return ph.StringField("source_package_version")
+// PackageName returns the version of the published source package.
+func (p *Publication) PackageVersion() string {
+	return p.StringField("source_package_version")
 }
 
-// DistroSeries returns the distro series packages are published into.
-func (ph *PubHistory) DistroSeries() (*DistroSeries, error) {
-	v, err := ph.Link("distro_series_link").Get(nil)
+// DistroSeries returns the distro series published into.
+func (p *Publication) DistroSeries() (*DistroSeries, error) {
+	v, err := p.Link("distro_series_link").Get(nil)
 	if err != nil {
 		return nil, err
 	}
 	return &DistroSeries{v}, nil
 }
 
-// Archive returns the archive the packages are published into.
-func (ph *PubHistory) Archive() (*Archive, error) {
-	v, err := ph.Link("archive_link").Get(nil)
+// Archive returns the archive published into.
+func (p *Publication) Archive() (*Archive, error) {
+	v, err := p.Link("archive_link").Get(nil)
 	if err != nil {
 		return nil, err
 	}
 	return &Archive{v}, nil
 }
 
-// Component returns the component the packages are published into.
-func (ph *PubHistory) Component() string {
-	return ph.StringField("component_name")
+// Component returns the component name published into.
+func (p *Publication) Component() string {
+	return p.StringField("component_name")
 }
 
-// PubHistoryList represents a list of PubHistory objects.
-type PubHistoryList struct {
+// PublicationList represents a list of Publication objects.
+type PublicationList struct {
 	*Value
 }
 
-// For iterates over the list of PubHistory values and calls f for each one.
-func (list *PubHistoryList) For(f func(s *PubHistory) error) error {
+// For iterates over the list of publication objects and calls f for
+// each one. If f returns a non-nil error, iteration will stop and the
+// error will be returned as the result of For.
+func (list *PublicationList) For(f func(s *Publication) error) error {
 	return list.Value.For(func(v *Value) error {
-		return f(&PubHistory{v})
+		return f(&Publication{v})
 	})
 }
