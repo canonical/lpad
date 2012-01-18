@@ -2,7 +2,6 @@ package lpad
 
 import (
 	"errors"
-	"net/url"
 	"strings"
 )
 
@@ -15,11 +14,8 @@ var weirdPrefixes = []string{
 // the short form lp: notation, or the web address rooted at
 // http://bazaar.launchpad.net/
 func (root *Root) Branch(burl string) (*Branch, error) {
-	u, err := url.Parse(burl)
-	if err != nil {
-		return nil, err
-	}
-	burl = u.String() // Unescape.
+	// getByUrl doesn't like escaped URLs.
+	burl = strings.Replace(burl, "%2B", "+", -1)
 	for _, prefix := range weirdPrefixes {
 		if strings.HasPrefix(burl, prefix) {
 			burl = "lp:" + burl[len(prefix):]

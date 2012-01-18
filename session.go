@@ -56,15 +56,18 @@ func (s *Session) Sign(req *http.Request) (err error) {
 // This simple example demonstrates how to get a user's name in a console
 // application:
 //
-//     root, err := lpad.Login(lpad.Production, &lpad.ConsoleOAuth{})
-//     if err != nil {
-//         panic(err)
-//     }
+//     oauth := &lpad.ConsoleOAuth{Consumer: "your-app"}
+//     root, err := lpad.Login(lpad.Production, oauth)
+//     check(err)
 //     me, err := root.Me()
-//     if err != nil {
-//         panic(err)
-//     }
+//     check(err)
 //     fmt.Println(me.DisplayName())
+//
+// Alternatively, it is possible to communicate with Launchpad anonymously:
+//
+//     oauth := &lpad.ConsoleOAuth{Consumer: "your-app", Anonymous: true}
+//     root, err := lpad.Login(lpad.Production, oauth)
+//     check(err)
 //
 func Login(baseurl APIBase, auth Auth) (*Root, error) {
 	baseloc := string(baseurl)

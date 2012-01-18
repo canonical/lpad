@@ -55,7 +55,7 @@ func (s *SessionS) TestLogin(c *C) {
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
-	c.Assert(req.URL.RawPath, Equals, "/")
+	c.Assert(req.URL.Path, Equals, "/")
 }
 
 var lpadAuth = &lpad.OAuth{

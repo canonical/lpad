@@ -43,7 +43,7 @@ func (s *OAuthS) TestRequestToken(c *C) {
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
-	c.Assert(req.URL.RawPath, Equals, "/+request-token")
+	c.Assert(req.URL.Path, Equals, "/+request-token")
 	c.Assert(req.Form["oauth_consumer_key"], Equals, []string{"https://launchpad.net/lpad"})
 	c.Assert(req.Form["oauth_signature_method"], Equals, []string{"PLAINTEXT"})
 	c.Assert(req.Form["oauth_signature"], Equals, []string{"&"})
@@ -131,11 +131,11 @@ func (s *OAuthS) TestAccessToken(c *C) {
 	c.Assert(err, IsNil)
 
 	req1 := testServer.WaitRequest()
-	c.Assert(req1.URL.RawPath, Equals, "/+request-token")
+	c.Assert(req1.URL.Path, Equals, "/+request-token")
 
 	req2 := testServer.WaitRequest()
 	c.Assert(req2.Method, Equals, "POST")
-	c.Assert(req2.URL.RawPath, Equals, "/+access-token")
+	c.Assert(req2.URL.Path, Equals, "/+access-token")
 	c.Assert(req2.Form["oauth_token"], Equals, []string{"mytoken1"})
 	c.Assert(req2.Form["oauth_signature"], Equals, []string{"&mysecret1"})
 
@@ -185,6 +185,24 @@ func (s *OAuthS) TestSignWithConsumer(c *C) {
 	c.Assert(auth, Matches, `.* oauth_consumer_key="my\+consumer".*`)
 }
 
+func (s *OAuthS) TestSignWithAnonymous(c *C) {
+	oauth := lpad.OAuth{
+		Consumer:  "my consumer",
+		Anonymous: true,
+	}
+
+	req, err := http.NewRequest("GET", "http://example.com/path", nil)
+	c.Assert(err, IsNil)
+
+	err = oauth.Sign(req)
+	c.Assert(err, IsNil)
+
+	auth := req.Header.Get("Authorization")
+	c.Assert(auth, Matches, `.* oauth_consumer_key="my\+consumer".*`)
+	c.Assert(auth, Matches, `.* oauth_token="".*`)
+	c.Assert(auth, Matches, `.* oauth_signature="%26".*`)
+}
+
 func (s *OAuthS) TestSignError(c *C) {
 	err := (&lpad.OAuth{}).Sign(nil)
 	c.Assert(err, ErrorMatches, `OAuth can't Sign without a token \(missing Login\?\)`)
@@ -202,7 +220,19 @@ func (s *OAuthS) TestDontLoginWithExistingSecret(c *C) {
 		TokenSecret: "initialsecret",
 		Callback:    callback,
 	}
+	err := oauth.Login(testServer.URL)
+	c.Assert(err, IsNil)
+}
 
+func (s *OAuthS) TestDontLoginWithAnonymous(c *C) {
+	callback := func(oauth *lpad.OAuth) error {
+		c.Error("Callback called!")
+		return errors.New("STOP!")
+	}
+	oauth := lpad.OAuth{
+		Anonymous: true,
+		Callback:  callback,
+	}
 	err := oauth.Login(testServer.URL)
 	c.Assert(err, IsNil)
 }
@@ -247,11 +277,11 @@ func (s *OAuthS) TestStoredOAuthLogin(c *C) {
 	c.Assert(err, IsNil)
 
 	req1 := testServer.WaitRequest()
-	c.Assert(req1.URL.RawPath, Equals, "/+request-token")
+	c.Assert(req1.URL.Path, Equals, "/+request-token")
 
 	req2 := testServer.WaitRequest()
 	c.Assert(req2.Method, Equals, "POST")
-	c.Assert(req2.URL.RawPath, Equals, "/+access-token")
+	c.Assert(req2.URL.Path, Equals, "/+access-token")
 
 	c.Assert(oauth.Token, Equals, "mytoken2")
 	c.Assert(oauth.TokenSecret, Equals, "mysecret2")

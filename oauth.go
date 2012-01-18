@@ -30,6 +30,7 @@ type OAuth struct {
 	CallbackURL        string             // Optional. AuthURL will redirect here after confirmation
 	Token, TokenSecret string             // Credentials obtained
 	Consumer           string             // Consumer name. Defaults to "https://launchpad.net/lpad"
+	Anonymous          bool               // Don't try to login
 }
 
 func (oauth *OAuth) consumer() string {
@@ -86,7 +87,7 @@ func (oauth *OAuth) Login(baseURL string) error {
 		oauth.BaseURL = oauth.BaseURL[:len(oauth.BaseURL)-1]
 	}
 
-	if oauth.TokenSecret != "" && oauth.AuthURL == "" {
+	if oauth.Anonymous || oauth.TokenSecret != "" && oauth.AuthURL == "" {
 		return nil // Ready to sign.
 	}
 
@@ -125,13 +126,14 @@ func (oauth *OAuth) Login(baseURL string) error {
 }
 
 func (oauth *OAuth) Sign(req *http.Request) error {
-	if oauth.Token == "" {
-		return errors.New("OAuth can't Sign without a token (missing Login?)")
+	if !oauth.Anonymous {
+		if oauth.Token == "" {
+			return errors.New("OAuth can't Sign without a token (missing Login?)")
+		}
+		if oauth.TokenSecret == "" {
+			return errors.New("OAuth can't Sign without a token secret (missing Login?)")
+		}
 	}
-	if oauth.TokenSecret == "" {
-		return errors.New("OAuth can't Sign without a token secret (missing Login?)")
-	}
-
 	auth := `OAuth realm="https://api.launchpad.net/", ` +
 		`oauth_consumer_key="` + url.QueryEscape(oauth.consumer()) + `", ` +
 		`oauth_token="` + url.QueryEscape(oauth.Token) + `", ` +
@@ -140,7 +142,6 @@ func (oauth *OAuth) Sign(req *http.Request) error {
 		`oauth_timestamp="` + strconv.FormatInt(time.Now().Unix(), 10) + `", ` +
 		`oauth_nonce="` + strconv.Itoa(int(rand.Int31())) + `", ` +
 		`oauth_version="1.0"`
-
 	req.Header.Add("Authorization", auth)
 	return nil
 }

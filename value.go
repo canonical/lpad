@@ -316,8 +316,6 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 			query = ""
 			ctype = "application/x-www-form-urlencoded"
 		} else {
-			req.URL.Raw = ""
-			req.URL.RawPath = ""
 			if req.URL.RawQuery != "" {
 				req.URL.RawQuery += "&"
 			}
