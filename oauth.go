@@ -177,7 +177,7 @@ func (oauth *StoredOAuth) Sign(req *http.Request) error {
 }
 
 func (oauth *StoredOAuth) read() error {
-	path := os.ShellExpand("$HOME/.lpad_oauth")
+	path := os.ExpandEnv("$HOME/.lpad_oauth")
 	if oauth.TokenSecret != "" {
 		return nil
 	}
@@ -201,7 +201,7 @@ func (oauth *StoredOAuth) read() error {
 }
 
 func (oauth *StoredOAuth) write() error {
-	path := os.ShellExpand("$HOME/.lpad_oauth")
+	path := os.ExpandEnv("$HOME/.lpad_oauth")
 	file, err := os.Create(path)
 	if err != nil {
 		return err

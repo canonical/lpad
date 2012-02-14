@@ -1,6 +1,7 @@
 package lpad
 
 import (
+	"fmt"
 	"net/url"
 	"time"
 )
@@ -100,24 +101,30 @@ func (d *Distro) BranchTips(since time.Time) (tips []BranchTip, err error) {
 	}
 	l, ok := v.Map()["value"].([]interface{})
 	if !ok {
-		return nil, InvalidValue
+		return nil, fmt.Errorf(`map is missing "value" field`)
 	}
 	for i := range l {
 		li, ok := l[i].([]interface{})
 		if !ok || len(li) != 3 {
-			return nil, InvalidValue
+			return nil, fmt.Errorf("unsupported branch tip item: %#v", l[i])
 		}
 		url, ok1 := li[0].(string)
 		rev, ok2 := li[1].(string)
 		series, ok3 := li[2].([]interface{})
+		if !ok2 {
+			if li[1] == nil {
+				// Branch without revisions.
+				ok2 = true
+			}
+		}
 		if !(ok1 && ok2 && ok3) {
-			return nil, InvalidValue
+			return nil, fmt.Errorf("unsupported branch tip item: %#v", l[i])
 		}
 		sseries := []string{}
 		for i := range series {
 			s, ok := series[i].(string)
 			if !ok {
-				return nil, InvalidValue
+				return nil, fmt.Errorf("unsupported branch tip item: %#v", l[i])
 			}
 			sseries = append(sseries, s)
 		}
