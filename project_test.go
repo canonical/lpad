@@ -157,7 +157,7 @@ func (s *ModelS) TestProjectActiveMilestones(c *C) {
 		names = append(names, ms.Name())
 		return nil
 	})
-	c.Assert(names, Equals, []string{"Name0", "Name1"})
+	c.Assert(names, DeepEquals, []string{"Name0", "Name1"})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
@@ -188,7 +188,7 @@ func (s *ModelS) TestProjectAllSeries(c *C) {
 		names = append(names, s.Name())
 		return nil
 	})
-	c.Assert(names, Equals, []string{"Name0", "Name1"})
+	c.Assert(names, DeepEquals, []string{"Name0", "Name1"})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")

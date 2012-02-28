@@ -120,7 +120,7 @@ func (s *ModelS) TestDistroActiveMilestones(c *C) {
 		names = append(names, ms.Name())
 		return nil
 	})
-	c.Assert(names, Equals, []string{"Name0", "Name1"})
+	c.Assert(names, DeepEquals, []string{"Name0", "Name1"})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
@@ -153,7 +153,7 @@ func (s *ModelS) TestDistroAllSeries(c *C) {
 		names = append(names, s.Name())
 		return nil
 	})
-	c.Assert(names, Equals, []string{"Name0", "Name1"})
+	c.Assert(names, DeepEquals, []string{"Name0", "Name1"})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
@@ -166,7 +166,7 @@ func (s *ModelS) TestBranchTips(c *C) {
 	distro := lpad.Distro{lpad.NewValue(nil, testServer.URL, testServer.URL+"/distro", nil)}
 	tips, err := distro.BranchTips(time.Time{})
 	c.Assert(err, IsNil)
-	c.Assert(tips, Equals, []lpad.BranchTip{
+	c.Assert(tips, DeepEquals, []lpad.BranchTip{
 		{"lp:a", "rev1", []string{"series1", "series2"}},
 		{"lp:b", "rev2", []string{}},
 	})
@@ -174,8 +174,8 @@ func (s *ModelS) TestBranchTips(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/distro")
-	c.Assert(req.Form["ws.op"], Equals, []string{"getBranchTips"})
-	c.Assert(req.Form["since"], Equals, []string(nil))
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"getBranchTips"})
+	c.Assert(req.Form["since"], DeepEquals, []string(nil))
 }
 
 func (s *ModelS) TestBranchTipsWithSince(c *C) {
@@ -183,11 +183,11 @@ func (s *ModelS) TestBranchTipsWithSince(c *C) {
 	distro := lpad.Distro{lpad.NewValue(nil, testServer.URL, testServer.URL+"/distro", nil)}
 	tips, err := distro.BranchTips(time.Unix(1316567786, 0))
 	c.Assert(err, IsNil)
-	c.Assert(tips, Equals, []lpad.BranchTip(nil))
+	c.Assert(tips, DeepEquals, []lpad.BranchTip(nil))
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/distro")
-	c.Assert(req.Form["ws.op"], Equals, []string{"getBranchTips"})
-	c.Assert(req.Form["since"], Equals, []string{"2011-09-21T01:16:26Z"})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"getBranchTips"})
+	c.Assert(req.Form["since"], DeepEquals, []string{"2011-09-21T01:16:26Z"})
 }

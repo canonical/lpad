@@ -31,32 +31,32 @@ func (s *ModelS) TestRootBranch(c *C) {
 
 	req := testServer.WaitRequest()
 	c.Assert(req.URL.Path, Equals, "/branches")
-	c.Assert(req.Form["ws.op"], Equals, []string{"getByUrl"})
-	c.Assert(req.Form["url"], Equals, []string{"lp:~joe/project/branch-name"})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"getByUrl"})
+	c.Assert(req.Form["url"], DeepEquals, []string{"lp:~joe/project/branch-name"})
 
 	testServer.PrepareResponse(200, jsonType, data)
 	_, err = root.Branch("lp:~joe/+junk/foo")
 	c.Assert(err, IsNil)
 	req = testServer.WaitRequest()
-	c.Assert(req.Form["url"], Equals, []string{"lp:~joe/+junk/foo"})
+	c.Assert(req.Form["url"], DeepEquals, []string{"lp:~joe/+junk/foo"})
 
 	testServer.PrepareResponse(200, jsonType, data)
 	_, err = root.Branch("lp:~joe/%2Bjunk/foo")
 	c.Assert(err, IsNil)
 	req = testServer.WaitRequest()
-	c.Assert(req.Form["url"], Equals, []string{"lp:~joe/+junk/foo"})
+	c.Assert(req.Form["url"], DeepEquals, []string{"lp:~joe/+junk/foo"})
 
 	testServer.PrepareResponse(200, jsonType, data)
 	_, err = root.Branch("bzr+ssh://bazaar.launchpad.net/%2Bbranch/foo")
 	c.Assert(err, IsNil)
 	req = testServer.WaitRequest()
-	c.Assert(req.Form["url"], Equals, []string{"lp:foo"})
+	c.Assert(req.Form["url"], DeepEquals, []string{"lp:foo"})
 
 	testServer.PrepareResponse(200, jsonType, data)
 	_, err = root.Branch("bzr+ssh://bazaar.launchpad.net/+branch/foo")
 	c.Assert(err, IsNil)
 	req = testServer.WaitRequest()
-	c.Assert(req.Form["url"], Equals, []string{"lp:foo"})
+	c.Assert(req.Form["url"], DeepEquals, []string{"lp:foo"})
 }
 
 func (s *ModelS) TestMergeProposal(c *C) {
@@ -128,17 +128,17 @@ func (s *ModelS) TestMergeProposalAddComment(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/mp")
-	c.Assert(req.Form["ws.op"], Equals, []string{"createComment"})
-	c.Assert(req.Form["subject"], Equals, []string{"Subject"})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"createComment"})
+	c.Assert(req.Form["subject"], DeepEquals, []string{"Subject"})
 
 	req = testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/mp")
-	c.Assert(req.Form["ws.op"], Equals, []string{"createComment"})
-	c.Assert(req.Form["subject"], Equals, []string{"Subject"})
-	c.Assert(req.Form["content"], Equals, []string{"Message."})
-	c.Assert(req.Form["vote"], Equals, []string{"Needs Fixing"})
-	c.Assert(req.Form["review_type"], Equals, []string{"QA"})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"createComment"})
+	c.Assert(req.Form["subject"], DeepEquals, []string{"Subject"})
+	c.Assert(req.Form["content"], DeepEquals, []string{"Message."})
+	c.Assert(req.Form["vote"], DeepEquals, []string{"Needs Fixing"})
+	c.Assert(req.Form["review_type"], DeepEquals, []string{"QA"})
 }
 
 func (s *ModelS) TestBranchProposeMerge(c *C) {
@@ -161,10 +161,10 @@ func (s *ModelS) TestBranchProposeMerge(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/~joe/ensemble/some-branch")
-	c.Assert(req.Form["commit_message"], Equals, []string{"Commit message"})
-	c.Assert(req.Form["initial_comment"], Equals, []string{"Description"})
-	c.Assert(req.Form["needs_review"], Equals, []string{"true"})
-	c.Assert(req.Form["target_branch"], Equals, []string{target.AbsLoc()})
+	c.Assert(req.Form["commit_message"], DeepEquals, []string{"Commit message"})
+	c.Assert(req.Form["initial_comment"], DeepEquals, []string{"Description"})
+	c.Assert(req.Form["needs_review"], DeepEquals, []string{"true"})
+	c.Assert(req.Form["target_branch"], DeepEquals, []string{target.AbsLoc()})
 }
 
 func (s *ModelS) TestBranchProposeMergePreReq(c *C) {
@@ -188,9 +188,9 @@ func (s *ModelS) TestBranchProposeMergePreReq(c *C) {
 	c.Assert(req.URL.Path, Equals, "/~joe/ensemble/some-branch")
 	c.Assert(req.Form["commit_message"], IsNil)
 	c.Assert(req.Form["initial_comment"], IsNil)
-	c.Assert(req.Form["needs_review"], Equals, []string{"false"})
-	c.Assert(req.Form["target_branch"], Equals, []string{target.AbsLoc()})
-	c.Assert(req.Form["prerequisite_branch"], Equals, []string{prereq.AbsLoc()})
+	c.Assert(req.Form["needs_review"], DeepEquals, []string{"false"})
+	c.Assert(req.Form["target_branch"], DeepEquals, []string{target.AbsLoc()})
+	c.Assert(req.Form["prerequisite_branch"], DeepEquals, []string{prereq.AbsLoc()})
 }
 
 const mpList = `{
@@ -211,7 +211,7 @@ func checkMPList(c *C, list *lpad.MergeProposalList) {
 		descs = append(descs, mp.Description())
 		return nil
 	})
-	c.Assert(descs, Equals, []string{"Desc0", "Desc1"})
+	c.Assert(descs, DeepEquals, []string{"Desc0", "Desc1"})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")

@@ -67,9 +67,9 @@ func (s *ValueS) TestGet(c *C) {
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
 	o, err := v.Get(nil)
 	c.Assert(err, IsNil)
-	c.Assert(&o, Equals, &v)
+	c.Assert(&o, DeepEquals, &v)
 	c.Assert(v.Map()["a"], Equals, float64(1))
-	c.Assert(v.Map()["b"], Equals, []interface{}{float64(1), float64(2)})
+	c.Assert(v.Map()["b"], DeepEquals, []interface{}{float64(1), float64(2)})
 	c.Assert(v.AbsLoc(), Equals, testServer.URL+"/myvalue")
 
 	req := testServer.WaitRequest()
@@ -93,7 +93,7 @@ func (s *ValueS) TestGetList(c *C) {
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
 	_, err := v.Get(nil)
 	c.Assert(err, IsNil)
-	c.Assert(v.Map()["value"], Equals, []interface{}{"a", "b", "c"})
+	c.Assert(v.Map()["value"], DeepEquals, []interface{}{"a", "b", "c"})
 }
 
 func (s *ValueS) TestGetAbsLoc(c *C) {
@@ -144,8 +144,8 @@ func (s *ValueS) TestGetWithParamsMerging(c *C) {
 	c.Assert(req.URL.Path, Equals, "/myvalue")
 	params, err := url.ParseQuery(req.URL.RawQuery)
 	c.Assert(err, IsNil)
-	c.Assert(params["k1"], Equals, []string{"v1"})
-	c.Assert(params["k2"], Equals, []string{"v2"})
+	c.Assert(params["k1"], DeepEquals, []string{"v1"})
+	c.Assert(params["k2"], DeepEquals, []string{"v2"})
 }
 
 func (s *ValueS) TestGetSign(c *C) {
@@ -219,7 +219,7 @@ func (s *ValueS) TestPost(c *C) {
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
 	other, err := v.Post(nil)
 	c.Assert(err, IsNil)
-	c.Assert(v.Map(), Equals, map[string]interface{}{})
+	c.Assert(v.Map(), DeepEquals, map[string]interface{}{})
 	c.Assert(other.Map()["ok"], Equals, true)
 	c.Assert(other.AbsLoc(), Equals, v.AbsLoc())
 
@@ -237,7 +237,7 @@ func (s *ValueS) TestPostWithParams(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/myvalue")
-	c.Assert(req.Form["k"], Equals, []string{"v"})
+	c.Assert(req.Form["k"], DeepEquals, []string{"v"})
 }
 
 func (s *ValueS) TestPostCreation(c *C) {
@@ -318,7 +318,7 @@ func (s *ValueS) TestPatch(c *C) {
 	var m M
 	err = json.Unmarshal([]byte(body(req2)), &m)
 	c.Assert(err, IsNil)
-	c.Assert(m, Equals, M{"a": 3.0, "c": "string", "d": true})
+	c.Assert(m, DeepEquals, M{"a": 3.0, "c": "string", "d": true})
 }
 
 func (s *ValueS) TestPatchWithContent(c *C) {
@@ -333,7 +333,7 @@ func (s *ValueS) TestPatchWithContent(c *C) {
 
 	err = v.Patch()
 	c.Assert(err, IsNil)
-	c.Assert(v.Map(), Equals, map[string]interface{}{"new": "content"})
+	c.Assert(v.Map(), DeepEquals, map[string]interface{}{"new": "content"})
 
 	req1 := testServer.WaitRequest()
 	c.Assert(req1.Method, Equals, "GET")
@@ -348,7 +348,7 @@ func (s *ValueS) TestPatchWithContent(c *C) {
 	var m M
 	err = json.Unmarshal([]byte(body(req2)), &m)
 	c.Assert(err, IsNil)
-	c.Assert(m, Equals, M{"a": 3.0})
+	c.Assert(m, DeepEquals, M{"a": 3.0})
 }
 
 type locationTest struct {
@@ -444,7 +444,7 @@ func (s *ValueS) TestCollection(c *C) {
 
 	testServer.WaitRequest()
 	req1 := testServer.WaitRequest()
-	c.Assert(req1.Form["n"], Equals, []string{"10"})
+	c.Assert(req1.Form["n"], DeepEquals, []string{"10"})
 }
 
 func (s *ValueS) TestCollectionGetError(c *C) {

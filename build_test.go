@@ -48,7 +48,7 @@ func (s *ModelS) TestBuildRetry(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/build")
-	c.Assert(req.Form["ws.op"], Equals, []string{"retry"})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"retry"})
 }
 
 func (s *ModelS) TestPublication(c *C) {

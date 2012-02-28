@@ -72,8 +72,8 @@ func (s *ModelS) TestBlueprintLinkBranch(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/project/+spec/the-bp")
-	c.Assert(req.Form["ws.op"], Equals, []string{"linkBranch"})
-	c.Assert(req.Form["branch"], Equals, []string{branch.AbsLoc()})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"linkBranch"})
+	c.Assert(req.Form["branch"], DeepEquals, []string{branch.AbsLoc()})
 }
 
 func (s *ModelS) TestBlueprintLinkBug(c *C) {
@@ -87,6 +87,6 @@ func (s *ModelS) TestBlueprintLinkBug(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/project/+spec/the-bp")
-	c.Assert(req.Form["ws.op"], Equals, []string{"linkBug"})
-	c.Assert(req.Form["bug"], Equals, []string{bug.AbsLoc()})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"linkBug"})
+	c.Assert(req.Form["bug"], DeepEquals, []string{bug.AbsLoc()})
 }

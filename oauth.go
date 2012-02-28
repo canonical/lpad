@@ -247,7 +247,7 @@ func fireBrowser(oauth *OAuth) error {
 		args := []string{browser, oauth.AuthURL}
 		p, err := os.StartProcess(args[0], args, &os.ProcAttr{})
 		if err == nil {
-			go func() { p.Wait(0) }() // Avoid zombies.
+			go func() { p.Wait() }() // Avoid zombies.
 		} else {
 			browser = ""
 		}

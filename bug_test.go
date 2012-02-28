@@ -19,7 +19,7 @@ func (s *ModelS) TestBug(c *C) {
 	c.Assert(bug.Id(), Equals, 123456)
 	c.Assert(bug.Title(), Equals, "Title")
 	c.Assert(bug.Description(), Equals, "Description")
-	c.Assert(bug.Tags(), Equals, []string{"a", "b", "c"})
+	c.Assert(bug.Tags(), DeepEquals, []string{"a", "b", "c"})
 	c.Assert(bug.Private(), Equals, true)
 	c.Assert(bug.SecurityRelated(), Equals, true)
 	c.Assert(bug.WebPage(), Equals, "http://page")
@@ -30,7 +30,7 @@ func (s *ModelS) TestBug(c *C) {
 	bug.SetSecurityRelated(false)
 	c.Assert(bug.Title(), Equals, "New title")
 	c.Assert(bug.Description(), Equals, "New description")
-	c.Assert(bug.Tags(), Equals, []string{"new", "tags"})
+	c.Assert(bug.Tags(), DeepEquals, []string{"new", "tags"})
 	c.Assert(bug.Private(), Equals, false)
 	c.Assert(bug.SecurityRelated(), Equals, false)
 }
@@ -126,13 +126,13 @@ func (s *ModelS) TestRootCreateBug(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/bugs")
-	c.Assert(req.Form["ws.op"], Equals, []string{"createBug"})
-	c.Assert(req.Form["title"], Equals, []string{"Title"})
-	c.Assert(req.Form["description"], Equals, []string{"Description."})
-	c.Assert(req.Form["private"], Equals, []string{"true"})
-	c.Assert(req.Form["security_related"], Equals, []string{"true"})
-	c.Assert(req.Form["tags"], Equals, []string{"a b c"})
-	c.Assert(req.Form["target"], Equals, []string{"http://target"})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"createBug"})
+	c.Assert(req.Form["title"], DeepEquals, []string{"Title"})
+	c.Assert(req.Form["description"], DeepEquals, []string{"Description."})
+	c.Assert(req.Form["private"], DeepEquals, []string{"true"})
+	c.Assert(req.Form["security_related"], DeepEquals, []string{"true"})
+	c.Assert(req.Form["tags"], DeepEquals, []string{"a b c"})
+	c.Assert(req.Form["target"], DeepEquals, []string{"http://target"})
 }
 
 func (s *ModelS) TestRootCreateBugNoTags(c *C) {
@@ -155,7 +155,7 @@ func (s *ModelS) TestRootCreateBugNoTags(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/bugs")
-	c.Assert(req.Form["ws.op"], Equals, []string{"createBug"})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"createBug"})
 
 	_, ok := req.Form["tags"]
 	c.Assert(ok, Equals, false)
@@ -172,8 +172,8 @@ func (s *ModelS) TestBugLinkBranch(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/bugs/123456")
-	c.Assert(req.Form["ws.op"], Equals, []string{"linkBranch"})
-	c.Assert(req.Form["branch"], Equals, []string{branch.AbsLoc()})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"linkBranch"})
+	c.Assert(req.Form["branch"], DeepEquals, []string{branch.AbsLoc()})
 }
 
 func (s *ModelS) TestBugTasks(c *C) {
@@ -200,7 +200,7 @@ func (s *ModelS) TestBugTasks(c *C) {
 		status = append(status, task.Status())
 		return nil
 	})
-	c.Assert(status, Equals, []lpad.BugStatus{lpad.StNew, lpad.StUnknown})
+	c.Assert(status, DeepEquals, []lpad.BugStatus{lpad.StNew, lpad.StUnknown})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")

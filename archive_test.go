@@ -50,6 +50,6 @@ func (s *ModelS) TestArchivePublication(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/archive")
-	c.Assert(req.Form["ws.op"], Equals, []string{"getPublishedSources"})
-	c.Assert(req.Form["source_name"], Equals, []string{"whatever"})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"getPublishedSources"})
+	c.Assert(req.Form["source_name"], DeepEquals, []string{"whatever"})
 }

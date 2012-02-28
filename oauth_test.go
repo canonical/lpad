@@ -44,9 +44,9 @@ func (s *OAuthS) TestRequestToken(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/+request-token")
-	c.Assert(req.Form["oauth_consumer_key"], Equals, []string{"https://launchpad.net/lpad"})
-	c.Assert(req.Form["oauth_signature_method"], Equals, []string{"PLAINTEXT"})
-	c.Assert(req.Form["oauth_signature"], Equals, []string{"&"})
+	c.Assert(req.Form["oauth_consumer_key"], DeepEquals, []string{"https://launchpad.net/lpad"})
+	c.Assert(req.Form["oauth_signature_method"], DeepEquals, []string{"PLAINTEXT"})
+	c.Assert(req.Form["oauth_signature"], DeepEquals, []string{"&"})
 
 	c.Assert(oauth.Token, Equals, "mytoken")
 	c.Assert(oauth.TokenSecret, Equals, "mysecret")
@@ -93,7 +93,7 @@ func (s *OAuthS) TestRequestTokenWithConsumer(c *C) {
 	c.Assert(err, ErrorMatches, "STOP!")
 
 	req := testServer.WaitRequest()
-	c.Assert(req.Form["oauth_consumer_key"], Equals, []string{"myconsumer"})
+	c.Assert(req.Form["oauth_consumer_key"], DeepEquals, []string{"myconsumer"})
 }
 
 func (s *OAuthS) TestCallbackURL(c *C) {
@@ -118,8 +118,8 @@ func (s *OAuthS) TestCallbackURL(c *C) {
 
 	q, err := url.ParseQuery(u.RawQuery)
 	c.Assert(err, IsNil)
-	c.Assert(q["oauth_token"], Equals, []string{"mytoken"})
-	c.Assert(q["oauth_callback"], Equals, []string{"http://example.com"})
+	c.Assert(q["oauth_token"], DeepEquals, []string{"mytoken"})
+	c.Assert(q["oauth_callback"], DeepEquals, []string{"http://example.com"})
 }
 
 func (s *OAuthS) TestAccessToken(c *C) {
@@ -136,8 +136,8 @@ func (s *OAuthS) TestAccessToken(c *C) {
 	req2 := testServer.WaitRequest()
 	c.Assert(req2.Method, Equals, "POST")
 	c.Assert(req2.URL.Path, Equals, "/+access-token")
-	c.Assert(req2.Form["oauth_token"], Equals, []string{"mytoken1"})
-	c.Assert(req2.Form["oauth_signature"], Equals, []string{"&mysecret1"})
+	c.Assert(req2.Form["oauth_token"], DeepEquals, []string{"mytoken1"})
+	c.Assert(req2.Form["oauth_signature"], DeepEquals, []string{"&mysecret1"})
 
 	c.Assert(oauth.Token, Equals, "mytoken2")
 	c.Assert(oauth.TokenSecret, Equals, "mysecret2")

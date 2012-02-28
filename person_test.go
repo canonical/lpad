@@ -83,13 +83,13 @@ func (s *ModelS) TestRootFindMembers(c *C) {
 		}
 		return nil
 	})
-	c.Assert(names, Equals, []string{"Name0", "Name1"})
+	c.Assert(names, DeepEquals, []string{"Name0", "Name1"})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/people")
-	c.Assert(req.Form["ws.op"], Equals, []string{"find"})
-	c.Assert(req.Form["text"], Equals, []string{"someuser"})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"find"})
+	c.Assert(req.Form["text"], DeepEquals, []string{"someuser"})
 }
 
 func (s *ModelS) TestRootFindPeople(c *C) {
@@ -115,13 +115,13 @@ func (s *ModelS) TestRootFindPeople(c *C) {
 		names = append(names, p.DisplayName())
 		return nil
 	})
-	c.Assert(names, Equals, []string{"Name0", "Name1"})
+	c.Assert(names, DeepEquals, []string{"Name0", "Name1"})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/people")
-	c.Assert(req.Form["ws.op"], Equals, []string{"findPerson"})
-	c.Assert(req.Form["text"], Equals, []string{"someuser"})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"findPerson"})
+	c.Assert(req.Form["text"], DeepEquals, []string{"someuser"})
 }
 
 func (s *ModelS) TestRootFindTeams(c *C) {
@@ -149,13 +149,13 @@ func (s *ModelS) TestRootFindTeams(c *C) {
 		names = append(names, t.DisplayName())
 		return nil
 	})
-	c.Assert(names, Equals, []string{"Name0", "Name1"})
+	c.Assert(names, DeepEquals, []string{"Name0", "Name1"})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/people")
-	c.Assert(req.Form["ws.op"], Equals, []string{"findTeam"})
-	c.Assert(req.Form["text"], Equals, []string{"someuser"})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"findTeam"})
+	c.Assert(req.Form["text"], DeepEquals, []string{"someuser"})
 }
 
 func (s *ModelS) TestPerson(c *C) {

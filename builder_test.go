@@ -66,6 +66,6 @@ func (s *ModelS) TestRootBuilder(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/builders")
-	c.Assert(req.Form["ws.op"], Equals, []string{"getByName"})
-	c.Assert(req.Form["name"], Equals, []string{"builder1"})
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"getByName"})
+	c.Assert(req.Form["name"], DeepEquals, []string{"builder1"})
 }
