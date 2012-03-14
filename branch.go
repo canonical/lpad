@@ -188,15 +188,15 @@ const (
 )
 
 // Status returns the current status of the merge proposal.
-// E.g. Needs review, Work In Progress, etc.
+// E.g. Needs Review, Work In Progress, etc.
 func (mp *MergeProposal) Status() MergeProposalStatus {
 	return MergeProposalStatus(mp.StringField("queue_status"))
 }
 
 // SetStatus changes the current status of the merge proposal.
-// Patch must be called to commit all changes.
-func (mp *MergeProposal) SetStatus(status MergeProposalStatus) {
-	mp.SetField("queue_status", string(status))
+func (mp *MergeProposal) SetStatus(status MergeProposalStatus) error {
+	_, err := mp.Post(Params{"ws.op":  "setStatus", "status": string(status)})
+	return err
 }
 
 // CommitMessage returns the commit message to be used when merging

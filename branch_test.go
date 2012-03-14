@@ -78,11 +78,9 @@ func (s *ModelS) TestMergeProposal(c *C) {
 	c.Assert(mp.WebPage(), Equals, "http://page")
 
 	mp.SetDescription("New description")
-	mp.SetStatus(lpad.StApproved)
 	mp.SetCommitMessage("New message")
 	c.Assert(mp.Description(), Equals, "New description")
 	c.Assert(mp.CommitMessage(), Equals, "New message")
-	c.Assert(mp.Status(), Equals, lpad.StApproved)
 
 	testServer.PrepareResponse(200, jsonType, `{"unique_name": "branch1"}`)
 	testServer.PrepareResponse(200, jsonType, `{"unique_name": "branch2"}`)
@@ -111,6 +109,21 @@ func (s *ModelS) TestMergeProposal(c *C) {
 	req = testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/source_link")
+}
+
+func (s *ModelS) TestMergeProposalSetStatus(c *C) {
+	testServer.PrepareResponse(200, jsonType, `{}`)
+
+	mp := &lpad.MergeProposal{lpad.NewValue(nil, testServer.URL, testServer.URL+"/mp", nil)}
+
+	err := mp.SetStatus(lpad.StWorkInProgress)
+	c.Assert(err, IsNil)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "POST")
+	c.Assert(req.URL.Path, Equals, "/mp")
+	c.Assert(req.Form["ws.op"], DeepEquals, []string{"setStatus"})
+	c.Assert(req.Form["status"], DeepEquals, []string{"Work in progress"})
 }
 
 func (s *ModelS) TestMergeProposalAddComment(c *C) {
