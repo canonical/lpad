@@ -211,9 +211,9 @@ func (v *Value) Link(key string) *Value {
 	return v.Location(link)
 }
 
-// Error returned when a Get, Post or Patch operation is done on
-// a nil value.
-var InvalidValue = errors.New("Invalid value")
+// ErrNotFound is returned when the HTTP API returns 404 or a nil
+// value is found in a resulting field or a field being operated on.
+var ErrNotFound = errors.New("resource not found")
 
 // Get issues an HTTP GET to retrieve the content of this value,
 // and returns itself and an error in case of problems. If params
@@ -238,7 +238,7 @@ func (v *Value) Post(params Params) (other *Value, err error) {
 // with the local changes.
 func (v *Value) Patch() error {
 	if v == nil {
-		return InvalidValue
+		return ErrNotFound
 	}
 	data, err := json.Marshal(v.patch)
 	if err != nil {
@@ -299,7 +299,7 @@ var httpClient = http.Client{
 
 func (v *Value) do(method string, params Params, body []byte) (value *Value, err error) {
 	if v == nil {
-		return nil, InvalidValue
+		return nil, ErrNotFound
 	}
 	value = v
 	query := multimap(params).Encode()
@@ -378,6 +378,9 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 			continue
 		}
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != 209 {
+			if resp.StatusCode == 404 {
+				return nil, ErrNotFound
+			}
 			return nil, &Error{resp.StatusCode, body}
 		}
 		if method == "PATCH" && resp.StatusCode != 209 {
@@ -388,7 +391,7 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 			return nil, errors.New("Non-JSON content-type: " + ctype)
 		}
 		if method == "GET" && len(body) > 0 && body[0] == 'n' && string(body) == "null" {
-			return nil, &Error{http.StatusNotFound, nil}
+			return nil, ErrNotFound
 		}
 		if err != nil {
 			return nil, err

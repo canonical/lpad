@@ -84,7 +84,7 @@ func (s *ValueS) TestGetNull(c *C) {
 	testServer.PrepareResponse(200, jsonType, "null")
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
 	o, err := v.Get(nil)
-	c.Assert(err, ErrorMatches, `Server returned 404 and no body.`)
+	c.Assert(err, Equals, lpad.ErrNotFound)
 	c.Assert(o, IsNil)
 }
 
@@ -198,10 +198,15 @@ func (s *ValueS) TestGetError(c *C) {
 	_, err := v.Get(nil)
 	c.Assert(err, ErrorMatches, `Server returned 500 and body: {"what": "ever"}`)
 
+	testServer.PrepareResponse(500, jsonType, "")
+	v = lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	_, err = v.Get(nil)
+	c.Assert(err, ErrorMatches, `Server returned 500 and no body.`)
+
 	testServer.PrepareResponse(404, jsonType, "")
 	v = lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
 	_, err = v.Get(nil)
-	c.Assert(err, ErrorMatches, `Server returned 404 and no body.`)
+	c.Assert(err, Equals, lpad.ErrNotFound)
 }
 
 func (s *ValueS) TestGetRedirectWithoutLocation(c *C) {
@@ -400,14 +405,14 @@ func (s *ValueS) TestNilValueHandlign(c *C) {
 
 	v, err := nv.Get(nil)
 	c.Assert(v, IsNil)
-	c.Assert(err, Equals, lpad.InvalidValue)
+	c.Assert(err, Equals, lpad.ErrNotFound)
 
 	v, err = nv.Post(nil)
 	c.Assert(v, IsNil)
-	c.Assert(err, Equals, lpad.InvalidValue)
+	c.Assert(err, Equals, lpad.ErrNotFound)
 
 	err = nv.Patch()
-	c.Assert(err, Equals, lpad.InvalidValue)
+	c.Assert(err, Equals, lpad.ErrNotFound)
 }
 
 func (s *ValueS) TestCollection(c *C) {
