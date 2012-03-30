@@ -10,7 +10,7 @@ func (s *ModelS) TestBug(c *C) {
 		"id":               123456.0,
 		"title":            "Title",
 		"description":      "Description",
-		"tags":             "a b c",
+		"tags":             []interface{}{"a", "b", "c"},
 		"private":          true,
 		"security_related": true,
 		"web_link":         "http://page",

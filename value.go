@@ -44,6 +44,7 @@ type AnyValue interface {
 	AbsLoc() string
 	Map() map[string]interface{}
 	StringField(key string) string
+	StringListField(key string) []string
 	IntField(key string) int
 	FloatField(key string) float64
 	BoolField(key string) bool
@@ -123,6 +124,20 @@ func (v *Value) StringField(key string) string {
 	return ""
 }
 
+// StringListField returns the named value field if it exists and is
+// set to a string list value, or an empty list otherwise.
+func (v *Value) StringListField(key string) []string {
+	var result []string
+	if items, ok := v.Map()[key].([]interface{}); ok {
+		for _, item := range items {
+			if s, ok := item.(string); ok {
+				result = append(result, s)
+			}
+		}
+	}
+	return result
+}
+
 // IntField returns the named value field if it exists and is
 // set to an int value, or zero otherwise.
 func (v *Value) IntField(key string) int {
@@ -165,6 +180,12 @@ func (v *Value) SetField(key string, value interface{}) {
 		newv = v
 	case bool:
 		newv = v
+	case []string:
+		var l []interface{}
+		for _, item := range v {
+			l = append(l, item)
+		}
+		newv = l
 	default:
 		panic(fmt.Sprintf("Unsupported value type for SetField: %#v", value))
 	}

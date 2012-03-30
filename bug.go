@@ -70,7 +70,7 @@ func (bug *Bug) Description() string {
 
 // Tags returns the set of tags associated with the bug.
 func (bug *Bug) Tags() []string {
-	return strings.Split(bug.StringField("tags"), " ")
+	return bug.StringListField("tags")
 }
 
 // Private returns true if the bug is flagged as private.
@@ -104,7 +104,7 @@ func (bug *Bug) SetDescription(description string) {
 // SetTags changes the bug tags.
 // Patch must be called to commit all changes.
 func (bug *Bug) SetTags(tags []string) {
-	bug.SetField("tags", strings.Join(tags, " "))
+	bug.SetField("tags", tags)
 }
 
 // SetPrivate changes the bug private flag.

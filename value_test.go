@@ -46,6 +46,7 @@ func (s *ValueS) TestFieldMethods(c *C) {
 		"s": "string",
 		"f": 42.1,
 		"b": true,
+		"l": []interface{}{"1", "2", 3},
 	}
 	v := lpad.NewValue(nil, "", "", m)
 	c.Assert(v.StringField("s"), Equals, "string")
@@ -60,6 +61,7 @@ func (s *ValueS) TestFieldMethods(c *C) {
 	c.Assert(v.BoolField("b"), Equals, true)
 	c.Assert(v.BoolField("n"), Equals, false)
 	c.Assert(v.BoolField("x"), Equals, false)
+	c.Assert(v.StringListField("l"), DeepEquals, []string{"1", "2"})
 }
 
 func (s *ValueS) TestGet(c *C) {
@@ -302,10 +304,12 @@ func (s *ValueS) TestPatch(c *C) {
 	v.SetField("a", 3)
 	v.SetField("c", "string")
 	v.SetField("d", true)
+	v.SetField("e", []string{"a", "b"})
 	c.Assert(v.Map()["a"], Equals, 3.0)
 	c.Assert(v.Map()["b"], Equals, 2.0)
 	c.Assert(v.Map()["c"], Equals, "string")
 	c.Assert(v.Map()["d"], Equals, true)
+	c.Assert(v.Map()["e"], DeepEquals, []interface{}{"a", "b"})
 
 	err = v.Patch()
 	c.Assert(err, IsNil)
@@ -323,7 +327,7 @@ func (s *ValueS) TestPatch(c *C) {
 	var m M
 	err = json.Unmarshal([]byte(body(req2)), &m)
 	c.Assert(err, IsNil)
-	c.Assert(m, DeepEquals, M{"a": 3.0, "c": "string", "d": true})
+	c.Assert(m, DeepEquals, M{"a": 3.0, "c": "string", "d": true, "e": []interface{}{"a", "b"}})
 }
 
 func (s *ValueS) TestPatchWithContent(c *C) {
