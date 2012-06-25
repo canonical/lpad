@@ -29,9 +29,9 @@ type Error struct {
 
 func (e *Error) Error() string {
 	if len(e.Body) == 0 {
-		return "Server returned " + strconv.Itoa(e.StatusCode) + " and no body."
+		return fmt.Sprintf("Server returned %d and no body.", e.StatusCode)
 	}
-	return "Server returned " + strconv.Itoa(e.StatusCode) + " and body: " + string(e.Body)
+	return fmt.Sprintf("Server returned %d and body: %s", e.StatusCode, e.Body)
 }
 
 // The AnyValue interface is implemented by *Value and thus by all the
@@ -312,128 +312,120 @@ func (v *Value) For(f func(*Value) error) (err error) {
 	return nil
 }
 
-var stopRedir = errors.New("marker")
-
-var httpClient = http.Client{
-	CheckRedirect: func(req *http.Request, via []*http.Request) error { return stopRedir },
-}
-
 func (v *Value) do(method string, params Params, body []byte) (value *Value, err error) {
 	if v == nil {
 		return nil, ErrNotFound
 	}
+
 	value = v
-	query := multimap(params).Encode()
-	for redirect := 0; ; redirect++ {
-		req, err := http.NewRequest(method, value.AbsLoc(), nil)
-		if err != nil {
+	if method == "POST" {
+		value = &Value{baseloc: v.baseloc, loc: v.loc, session: v.session}
+	}
+
+	req, err := http.NewRequest(method, value.AbsLoc(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	err = v.prepare(req, params, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if debugOn {
+		if err := printRequestDump(req); err != nil {
 			return nil, err
 		}
-		req.Header["Accept"] = []string{"application/json"}
+	}
 
-		ctype := "application/json"
-		if method == "POST" {
-			body = []byte(query)
-			query = ""
-			ctype = "application/x-www-form-urlencoded"
-		} else {
-			if req.URL.RawQuery != "" {
-				req.URL.RawQuery += "&"
-			}
-			req.URL.RawQuery += query
-		}
+	last := req
+	client := http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			v.prepare(req, nil, nil)
+			last = req
+			return nil
+		},
+	}
 
-		if body != nil {
-			req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-			req.Header["Content-Type"] = []string{ctype}
-			req.Header["Content-Length"] = []string{strconv.Itoa(len(body))}
-			req.ContentLength = int64(len(body))
-		}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
 
-		if v.session != nil {
-			err := v.session.Sign(req)
-			if err != nil {
-				return nil, err
-			}
-		}
+	value.loc = last.URL.String()
 
-		if debugOn {
-			if err := printRequestDump(req); err != nil {
-				return nil, err
-			}
-		}
-
-		resp, err := httpClient.Do(req)
-		if urlerr, ok := err.(*url.Error); ok && urlerr.Err == stopRedir {
-			// fine
-		} else if err != nil {
+	if debugOn {
+		if err := printResponseDump(resp); err != nil {
 			return nil, err
 		}
+	}
 
-		if debugOn {
-			if err := printResponseDump(resp); err != nil {
-				return nil, err
-			}
-		}
+	body, berr := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
 
-		body, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
-
-		location := resp.Header.Get("Location")
-
-		if method == "POST" {
-			value = &Value{baseloc: v.baseloc, session: v.session}
-			if resp.StatusCode == 201 && location != "" {
-				value.loc = location
-				return value.do("GET", nil, nil)
-			} else {
-				value.loc = v.AbsLoc()
-			}
+	if method == "POST" && resp.StatusCode == 201 {
+		value.loc = resp.Header.Get("Location")
+		if value.loc == "" {
+			return nil, errors.New("Server returned 201 without Location")
 		}
-		if method == "GET" && shouldRedirect(resp.StatusCode) {
-			if location == "" {
-				msg := "Got redirection status " + strconv.Itoa(resp.StatusCode) + " without a Location"
-				return nil, errors.New(msg)
-			}
-			value.loc = location
-			continue
-		}
-		if resp.StatusCode != http.StatusOK && resp.StatusCode != 209 {
-			if resp.StatusCode == 404 {
-				return nil, ErrNotFound
-			}
-			return nil, &Error{resp.StatusCode, body}
-		}
-		if method == "PATCH" && resp.StatusCode != 209 {
-			return nil, nil
-		}
-		ctype = resp.Header.Get("Content-Type")
-		if ctype != "application/json" {
-			return nil, errors.New("Non-JSON content-type: " + ctype)
-		}
-		if method == "GET" && len(body) > 0 && body[0] == 'n' && string(body) == "null" {
+		return value.do("GET", nil, nil)
+	}
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != 209 {
+		if resp.StatusCode == 404 {
 			return nil, ErrNotFound
 		}
-		if err != nil {
-			return nil, err
-		}
-		value.m = make(map[string]interface{})
-		if len(body) > 0 && body[0] == '[' {
-			body = append([]byte(`{"value":`), body...)
-			body = append(body, '}')
-		}
-		return value, json.Unmarshal(body, &value.m)
+		return nil, &Error{resp.StatusCode, body}
+	}
+	if method == "PATCH" && resp.StatusCode != 209 {
+		return nil, nil
+	}
+	ctype := resp.Header.Get("Content-Type")
+	if ctype != "application/json" {
+		return nil, errors.New("Non-JSON content-type: " + ctype)
+	}
+	if method == "GET" && len(body) > 0 && body[0] == 'n' && string(body) == "null" {
+		return nil, ErrNotFound
 	}
 
-	panic("unreachable")
+	if berr != nil {
+		return nil, berr
+	}
+	value.m = make(map[string]interface{})
+	if len(body) > 0 && body[0] == '[' {
+		body = append([]byte(`{"value":`), body...)
+		body = append(body, '}')
+	}
+	return value, json.Unmarshal(body, &value.m)
 }
 
-func shouldRedirect(statusCode int) bool {
-	switch statusCode {
-	case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect:
-		return true
+func (v *Value) prepare(req *http.Request, params Params, body []byte) error {
+	req.Header["Accept"] = []string{"application/json"}
+
+	query := multimap(params).Encode()
+	ctype := "application/json"
+	if req.Method == "POST" {
+		body = []byte(query)
+		query = ""
+		ctype = "application/x-www-form-urlencoded"
+	} else {
+		if req.URL.RawQuery == "" {
+			req.URL.RawQuery = query
+		} else {
+			req.URL.RawQuery += "&" + query
+		}
 	}
-	return false
+
+	if body != nil {
+		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		req.Header["Content-Type"] = []string{ctype}
+		req.Header["Content-Length"] = []string{strconv.Itoa(len(body))}
+		req.ContentLength = int64(len(body))
+	}
+
+	if v.session != nil {
+		return v.session.Sign(req)
+	}
+	return nil
 }
 
 func multimap(params map[string]string) url.Values {
