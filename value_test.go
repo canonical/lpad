@@ -260,14 +260,29 @@ func (s *ValueS) TestPost(c *C) {
 }
 
 func (s *ValueS) TestPostWithParams(c *C) {
-	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
+	testServer.PrepareResponse(200, jsonType, `{"ok": true, "self_link": "/self"}`)
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
-	_, err := v.Post(lpad.Params{"k": "v"})
+	other, err := v.Post(lpad.Params{"k": "v"})
 	c.Assert(err, IsNil)
+	c.Assert(other.AbsLoc(), Equals, "/self")
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/myvalue")
+	c.Assert(req.Form["k"], DeepEquals, []string{"v"})
+}
+
+func (s *ValueS) TestPostWithSelfLinkOnOriginal(c *C) {
+	m := M{"self_link": testServer.URL+"/self"}
+	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", m)
+	other, err := v.Post(lpad.Params{"k": "v"})
+	c.Assert(err, IsNil)
+	c.Assert(other.AbsLoc(), Equals, testServer.URL+"/self")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "POST")
+	c.Assert(req.URL.Path, Equals, "/self")
 	c.Assert(req.Form["k"], DeepEquals, []string{"v"})
 }
 

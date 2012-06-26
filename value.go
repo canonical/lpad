@@ -319,7 +319,8 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 
 	value = v
 	if method == "POST" {
-		value = &Value{baseloc: v.baseloc, loc: v.loc, session: v.session}
+		// Must use AbsLoc so it takes self_link into account.
+		value = &Value{baseloc: v.baseloc, loc: v.AbsLoc(), session: v.session}
 	}
 
 	req, err := http.NewRequest(method, value.AbsLoc(), nil)
