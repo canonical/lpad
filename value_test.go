@@ -126,6 +126,7 @@ func (s *ValueS) TestGetWithParams(c *C) {
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
 	_, err := v.Get(lpad.Params{"k": "v"})
 	c.Assert(err, IsNil)
+	c.Assert(v.AbsLoc(), Equals, testServer.URL+"/myvalue")
 	c.Assert(v.Map()["ok"], Equals, true)
 
 	req := testServer.WaitRequest()
@@ -182,6 +183,29 @@ func (s *ValueS) TestGetRedirect(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/myvalue")
+}
+
+func (s *ValueS) TestGetRedirectWithParams(c *C) {
+	headers := map[string]string{
+		"Location": testServer.URL + "/myothervalue?p=1",
+	}
+	testServer.PrepareResponse(303, headers, "")
+	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
+	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", nil)
+	_, err := v.Get(lpad.Params{"k": "v"})
+	c.Assert(err, IsNil)
+	c.Assert(v.AbsLoc(), Equals, testServer.URL+"/myothervalue?p=1")
+	c.Assert(v.Map()["ok"], Equals, true)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/myvalue")
+	c.Assert(req.Form.Get("k"), Equals, "v")
+
+	req = testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/myothervalue")
+	c.Assert(req.Form.Get("k"), Equals, "")
 }
 
 func (s *ValueS) TestGetNonJSONContent(c *C) {

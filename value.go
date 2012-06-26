@@ -338,11 +338,10 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 		}
 	}
 
-	last := req
 	client := http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			value.loc = req.URL.String()
 			v.prepare(req, nil, nil)
-			last = req
 			return nil
 		},
 	}
@@ -351,8 +350,6 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 	if err != nil {
 		return nil, err
 	}
-
-	value.loc = last.URL.String()
 
 	if debugOn {
 		if err := printResponseDump(resp); err != nil {
@@ -407,12 +404,10 @@ func (v *Value) prepare(req *http.Request, params Params, body []byte) error {
 		body = []byte(query)
 		query = ""
 		ctype = "application/x-www-form-urlencoded"
-	} else {
-		if req.URL.RawQuery == "" {
-			req.URL.RawQuery = query
-		} else {
-			req.URL.RawQuery += "&" + query
-		}
+	} else if req.URL.RawQuery == "" {
+		req.URL.RawQuery = query
+	} else if query != "" {
+		req.URL.RawQuery += "&" + query
 	}
 
 	if body != nil {
