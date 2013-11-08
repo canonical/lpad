@@ -43,6 +43,11 @@ func (b *Branch) Id() string {
 	return b.StringField("bzr_identity")
 }
 
+//RevisionCount returns the revision number of the tip of the branch
+func (b *Branch) RevisionCount() int {
+	return b.IntField("revision_count")
+}
+
 // UniqueName returns the unique branch name, in the
 // form lp:~user/project/branch-name.
 func (b *Branch) UniqueName() string {
@@ -195,7 +200,7 @@ func (mp *MergeProposal) Status() MergeProposalStatus {
 
 // SetStatus changes the current status of the merge proposal.
 func (mp *MergeProposal) SetStatus(status MergeProposalStatus) error {
-	_, err := mp.Post(Params{"ws.op":  "setStatus", "status": string(status)})
+	_, err := mp.Post(Params{"ws.op": "setStatus", "status": string(status)})
 	return err
 }
 
