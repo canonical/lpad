@@ -7,9 +7,10 @@ import (
 
 func (s *ModelS) TestBranch(c *C) {
 	m := M{
-		"bzr_identity": "lp:~joe/ensemble",
-		"unique_name":  "~joe/ensemble/some-branch",
-		"web_link":     "http://page",
+		"bzr_identity":   "lp:~joe/ensemble",
+		"unique_name":    "~joe/ensemble/some-branch",
+		"web_link":       "http://page",
+		"revision_count": float64(12),
 	}
 	branch := &lpad.Branch{lpad.NewValue(nil, "", "", m)}
 	c.Assert(branch.Id(), Equals, "lp:~joe/ensemble")
@@ -17,6 +18,7 @@ func (s *ModelS) TestBranch(c *C) {
 	c.Assert(branch.WebPage(), Equals, "http://page")
 	c.Assert(branch.OwnerName(), Equals, "joe")
 	c.Assert(branch.ProjectName(), Equals, "ensemble")
+	c.Assert(branch.RevisionCount(), Equals, 12)
 }
 
 func (s *ModelS) TestRootBranch(c *C) {
@@ -260,4 +262,3 @@ func (s *ModelS) TestBranchOwner(c *C) {
 	req := testServer.WaitRequest()
 	c.Assert(req.URL.Path, Equals, "/link")
 }
-
