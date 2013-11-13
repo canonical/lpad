@@ -43,7 +43,7 @@ func (b *Branch) Id() string {
 	return b.StringField("bzr_identity")
 }
 
-//RevisionCount returns the revision number of the tip of the branch
+// RevisionCount returns the revision number of the tip of the branch
 func (b *Branch) RevisionCount() int {
 	return b.IntField("revision_count")
 }
