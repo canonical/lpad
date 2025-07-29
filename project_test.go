@@ -1,8 +1,9 @@
 package lpad_test
 
 import (
-	. "launchpad.net/gocheck"
-	"launchpad.net/lpad"
+	. "gopkg.in/check.v1"
+
+	"github.com/canonical/lpad"
 )
 
 func (s *ModelS) TestProject(c *C) {

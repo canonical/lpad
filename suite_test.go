@@ -5,12 +5,13 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	. "launchpad.net/gocheck"
 	"net/http"
 	"net/url"
 	"os"
 	"testing"
 	"time"
+
+	. "gopkg.in/check.v1"
 )
 
 func Test(t *testing.T) {
@@ -29,7 +30,7 @@ func (s *SuiteI) SetUpSuite(c *C) {
 
 type HTTPSuite struct{}
 
-var testServer = NewTestHTTPServer("http://localhost:4444", 5 * time.Second)
+var testServer = NewTestHTTPServer("http://localhost:4444", 5*time.Second)
 
 func (s *HTTPSuite) SetUpSuite(c *C) {
 	testServer.Start()

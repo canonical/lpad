@@ -1,8 +1,9 @@
 package lpad_test
 
 import (
-	. "launchpad.net/gocheck"
-	"launchpad.net/lpad"
+	. "gopkg.in/check.v1"
+
+	"github.com/canonical/lpad"
 )
 
 func (s *ModelS) TestBuild(c *C) {
@@ -41,7 +42,7 @@ func (s *ModelS) TestBuild(c *C) {
 func (s *ModelS) TestBuildRetry(c *C) {
 	testServer.PrepareResponse(200, jsonType, "{}")
 
-	build := &lpad.Build{lpad.NewValue(nil, testServer.URL, testServer.URL + "/build", nil)}
+	build := &lpad.Build{lpad.NewValue(nil, testServer.URL, testServer.URL+"/build", nil)}
 	err := build.Retry()
 	c.Assert(err, IsNil)
 

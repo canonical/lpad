@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	. "launchpad.net/gocheck"
-	"launchpad.net/lpad"
 	"net/url"
 	"strconv"
+
+	. "gopkg.in/check.v1"
+
+	"github.com/canonical/lpad"
 )
 
 var _ = Suite(&ValueS{})
@@ -273,7 +275,7 @@ func (s *ValueS) TestPostWithParams(c *C) {
 }
 
 func (s *ValueS) TestPostWithSelfLinkOnOriginal(c *C) {
-	m := M{"self_link": testServer.URL+"/self"}
+	m := M{"self_link": testServer.URL + "/self"}
 	testServer.PrepareResponse(200, jsonType, `{"ok": true}`)
 	v := lpad.NewValue(nil, "", testServer.URL+"/myvalue", m)
 	other, err := v.Post(lpad.Params{"k": "v"})

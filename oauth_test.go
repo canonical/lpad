@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	. "launchpad.net/gocheck"
-	"launchpad.net/lpad"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+
+	. "gopkg.in/check.v1"
+
+	"github.com/canonical/lpad"
 )
 
 var _ = Suite(&OAuthS{})
