@@ -1,9 +1,11 @@
 package lpad_test
 
 import (
-	. "launchpad.net/gocheck"
-	"launchpad.net/lpad"
 	"time"
+
+	. "gopkg.in/check.v1"
+
+	"github.com/canonical/lpad"
 )
 
 func (s *ModelS) TestDistro(c *C) {

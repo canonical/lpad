@@ -1,9 +1,11 @@
 package lpad_test
 
 import (
-	. "launchpad.net/gocheck"
-	"launchpad.net/lpad"
 	"net/http"
+
+	. "gopkg.in/check.v1"
+
+	"github.com/canonical/lpad"
 )
 
 var _ = Suite(&SessionS{})

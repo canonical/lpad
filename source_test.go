@@ -1,8 +1,9 @@
 package lpad_test
 
 import (
-	. "launchpad.net/gocheck"
-	"launchpad.net/lpad"
+	. "gopkg.in/check.v1"
+
+	"github.com/canonical/lpad"
 )
 
 func (s *ModelS) TestSourcePackage(c *C) {
@@ -42,12 +43,12 @@ func (s *ModelS) TestSourcePackage(c *C) {
 
 func (s *ModelS) TestDistroSourcePackage(c *C) {
 	m := M{
-		"name":                            "thename",
-		"display_name":                     "Display Name",
-		"title": "title",
-		"web_link":                        "http://page",
-		"self_link":                       "http://selfpage",
-		"distribution_link":               testServer.URL + "/distribution_link",
+		"name":              "thename",
+		"display_name":      "Display Name",
+		"title":             "title",
+		"web_link":          "http://page",
+		"self_link":         "http://selfpage",
+		"distribution_link": testServer.URL + "/distribution_link",
 	}
 	source := &lpad.DistroSourcePackage{lpad.NewValue(nil, "", "", m)}
 	c.Assert(source.Name(), Equals, "thename")
