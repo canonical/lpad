@@ -18,8 +18,7 @@ import (
 // The Params type is a helper to pass parameter into the Value request
 // methods.  It may be used as:
 //
-//     value.Get(lpad.Params{"name": "value"})
-//
+//	value.Get(lpad.Params{"name": "value"})
 type Params map[string]string
 
 type Error struct {
@@ -242,8 +241,7 @@ var ErrNotFound = errors.New("resource not found")
 //
 // Since Get returns the value itself, it may be used as:
 //
-//     v, err := other.Link("some_link").Get(nil)
-//
+//	v, err := other.Link("some_link").Get(nil)
 func (v *Value) Get(params Params) (same *Value, err error) {
 	return v.do("GET", params, nil)
 }
@@ -361,10 +359,10 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 	body, berr := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	if method == "POST" && resp.StatusCode == 201 {
+	if (method == "POST" && resp.StatusCode == 201) || (method == "GET" && resp.StatusCode == 303) {
 		value.loc = resp.Header.Get("Location")
 		if value.loc == "" {
-			return nil, errors.New("Server returned 201 without Location")
+			return nil, errors.New("Server returned %d without Location")
 		}
 		return value.do("GET", nil, nil)
 	}
