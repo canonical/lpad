@@ -361,6 +361,15 @@ func (v *Value) do(method string, params Params, body []byte) (value *Value, err
 	body, berr := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
+	// Go used to return an error if the Location header was missing before
+	// Go 1.19. For backwards-compatibility, we keep the same error.
+	if method == "GET" && resp.StatusCode == 303 && resp.Header.Get("Location") == "" {
+		return nil, &url.Error{
+			Op:  "Get",
+			URL: req.URL.String(),
+			Err: fmt.Errorf("%d response missing Location header", resp.StatusCode),
+		}
+	}
 	if method == "POST" && resp.StatusCode == 201 {
 		value.loc = resp.Header.Get("Location")
 		if value.loc == "" {
